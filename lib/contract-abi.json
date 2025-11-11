@@ -6,8 +6,183 @@
         "name": "_treasuryAddress",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "_dexRouter",
+        "type": "address",
+        "internalType": "address"
       }
     ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "BONDING_CURVE_PERCENT",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "CREATOR_MAX_BUY_PERCENT",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "FEE_PERCENT",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "HELD_PERCENT",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "INITIAL_PRICE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_SUPPLY",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "PRICE_STEP_SIZE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "allTokens",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "approveRouter",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "router",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "buyTokens",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "minTokensOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "tokensBought",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "completeTokenLaunch",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
     "stateMutability": "nonpayable"
   },
   {
@@ -41,51 +216,91 @@
   },
   {
     "type": "function",
-    "name": "buyTokens",
+    "name": "creatorBoughtAmount",
     "inputs": [
       {
-        "name": "tokenAddress",
+        "name": "",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "minTokensOut",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [
       {
-        "name": "tokensBought",
+        "name": "",
         "type": "uint256",
         "internalType": "uint256"
       }
     ],
-    "stateMutability": "payable"
+    "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "sellTokens",
+    "name": "dexRouter",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getAllTokens",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getCurrentPrice",
     "inputs": [
       {
         "name": "tokenAddress",
         "type": "address",
         "internalType": "address"
-      },
-      {
-        "name": "tokenAmount",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "outputs": [
       {
-        "name": "ethReceived",
+        "name": "",
         "type": "uint256",
         "internalType": "uint256"
       }
     ],
-    "stateMutability": "nonpayable"
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getHeldTokens",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -124,11 +339,6 @@
             "internalType": "address"
           },
           {
-            "name": "creatorAllocation",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
             "name": "heldTokens",
             "type": "uint256",
             "internalType": "uint256"
@@ -140,16 +350,6 @@
           },
           {
             "name": "currentSupply",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "virtualTrust",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "virtualTokens",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -170,17 +370,22 @@
   },
   {
     "type": "function",
-    "name": "getCurrentPrice",
+    "name": "getUserVolume",
     "inputs": [
       {
-        "name": "tokenAddress",
+        "name": "user",
         "type": "address",
         "internalType": "address"
       }
     ],
     "outputs": [
       {
-        "name": "",
+        "name": "buyVolume",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "sellVolume",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -189,16 +394,275 @@
   },
   {
     "type": "function",
-    "name": "getAllTokens",
+    "name": "isValidToken",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
     "inputs": [],
     "outputs": [
       {
         "name": "",
-        "type": "address[]",
-        "internalType": "address[]"
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "sellTokens",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "ethReceived",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setHeldTokens",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "tokenInfo",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "symbol",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "metadata",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "creator",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "heldTokens",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxSupply",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "currentSupply",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "completed",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "creationTime",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "treasuryAddress",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "userVolumes",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "totalBuyVolume",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalSellVolume",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "withdrawHeldTokens",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "HeldTokensWithdrawn",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "TokenCompleted",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "finalSupply",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "finalPrice",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
   },
   {
     "type": "event",
@@ -297,13 +761,13 @@
         "internalType": "address"
       },
       {
-        "name": "tokenAmount",
+        "name": "ethAmount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
       },
       {
-        "name": "ethAmount",
+        "name": "tokenAmount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -316,5 +780,72 @@
       }
     ],
     "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "CreatorBuyLimitExceeded",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ExceedsMaxSupply",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientCirculatingSupply",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MustSellTokens",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MustSendETH",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NoTokensToBuy",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ReentrancyGuardReentrantCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SlippageTooHigh",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TokenLaunchCompleted",
+    "inputs": []
   }
 ]

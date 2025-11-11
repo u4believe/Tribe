@@ -3,8 +3,10 @@
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { useState } from "react"
-import { Menu, LogOut, Settings, Wallet, Sparkles } from "lucide-react"
+import { Menu, LogOut, Settings, Wallet, Sparkles, TrendingUp, Plus } from "lucide-react"
 import { useWallet } from "@/hooks/use-wallet"
+import { useRouter } from "next/navigation"
+import HeaderProfile from "@/components/header-profile"
 
 interface HeaderProps {
   onCreateClick: () => void
@@ -14,6 +16,7 @@ interface HeaderProps {
 export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
   const [showMenu, setShowMenu] = useState(false)
   const { address, balance, isConnecting, connect, disconnect } = useWallet()
+  const router = useRouter()
   const hasAlphaAccess = Number(balance) >= 2000
 
   const handleConnect = async () => {
@@ -31,23 +34,31 @@ export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
   }
 
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <header className="border-b border-border bg-black sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <div className="relative w-56 h-20">
+          <div className="relative w-56 h-20 cursor-pointer" onClick={() => router.push("/")}>
             <Image src="/tribe-logo.png" alt="TRIBE Logo" fill className="object-contain" priority />
           </div>
           <div className="hidden lg:block h-10 w-px bg-border" />
-          <p className="hidden lg:block text-sm text-muted-foreground font-medium">Bonding Curve Launchpad</p>
+          <Button
+            onClick={onCreateClick}
+            className="hidden lg:flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold px-6"
+          >
+            <Plus className="w-4 h-4" />
+            Create Token
+          </Button>
         </div>
 
         <div className="flex items-center gap-4">
           {address && (
             <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/30">
               <span className="text-sm text-muted-foreground">Balance:</span>
-              <span className="font-semibold text-foreground">{Number(balance).toFixed(2)} TTRUST</span>
+              <span className="font-semibold text-foreground">{Number(balance).toFixed(2)} TRUST</span>
             </div>
           )}
+
+          <HeaderProfile />
 
           {hasAlphaAccess && (
             <Button
@@ -59,10 +70,6 @@ export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
               Alpha Room
             </Button>
           )}
-
-          <Button onClick={onCreateClick} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            Create Token
-          </Button>
 
           <div className="relative">
             <Button
@@ -84,11 +91,23 @@ export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
                         <span className="text-sm font-mono text-foreground">{formatAddress(address)}</span>
                       </div>
                     </div>
-                    <button className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/50 flex items-center gap-2 transition-colors">
-                      <Wallet className="w-4 h-4" />
+                    <button
+                      onClick={() => {
+                        router.push("/portfolio")
+                        setShowMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                    >
+                      <TrendingUp className="w-4 h-4" />
                       Portfolio
                     </button>
-                    <button className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/50 flex items-center gap-2 transition-colors">
+                    <button
+                      onClick={() => {
+                        router.push("/settings")
+                        setShowMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                    >
                       <Settings className="w-4 h-4" />
                       Settings
                     </button>

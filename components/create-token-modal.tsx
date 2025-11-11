@@ -10,7 +10,7 @@ import { X, Upload, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { useContract } from "@/hooks/use-contract"
 import { useWallet } from "@/hooks/use-wallet"
-import { checkLinkExists, createTokenInDatabase } from "@/lib/tokens"
+import { checkLinkExists, createTokenInDatabase, validateIntuitionLink, normalizeIntuitionLink } from "@/lib/tokens"
 import type { MemeToken } from "@/lib/tokens"
 
 interface CreateTokenModalProps {
@@ -53,16 +53,16 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
     }
   }
 
-  const validateIntuitionLink = (): string | null => {
+  const validateIntuitionLinkField = (): string | null => {
     const link = formData.intuitionLink.trim()
 
     if (link === "") {
       return null // Link is optional
     }
 
-    // Enforce https:// prefix
-    if (!link.startsWith("https://")) {
-      return 'Link must start with "https://" prefix'
+    const validation = validateIntuitionLink(link)
+    if (!validation.valid) {
+      return validation.error || "Invalid link format"
     }
 
     return null
@@ -79,14 +79,20 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
       return
     }
 
-    const linkValidationError = validateIntuitionLink()
+    const linkValidationError = validateIntuitionLinkField()
     if (linkValidationError) {
       setError(linkValidationError)
       return
     }
 
     if (formData.intuitionLink) {
-      const linkExists = await checkLinkExists(formData.intuitionLink.trim())
+      const validation = validateIntuitionLink(formData.intuitionLink)
+      if (!validation.valid) {
+        setError(validation.error || "Invalid link format")
+        return
+      }
+
+      const linkExists = await checkLinkExists(formData.intuitionLink)
       if (linkExists) {
         setError("This Intuition Graph link is already in use. Please use a unique link.")
         return
@@ -107,6 +113,8 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
 
       const tokenAddress = await createToken(formData.name, formData.symbol, metadata)
 
+      const normalizedLink = formData.intuitionLink ? normalizeIntuitionLink(formData.intuitionLink) : ""
+
       const newToken: Omit<MemeToken, "id"> = {
         name: formData.name,
         symbol: formData.symbol,
@@ -118,7 +126,7 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
         currentSupply: 0,
         holders: 1,
         creator: address,
-        intuitionLink: formData.intuitionLink.trim(),
+        intuitionLink: normalizedLink,
         isAlpha: true,
         contractAddress: tokenAddress,
       }
@@ -250,14 +258,14 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
                 <label className="text-sm text-muted-foreground mb-2 block">Intuition Portal Link (Optional)</label>
                 <Input
                   name="intuitionLink"
-                  placeholder="https://intuition.systems/..."
+                  placeholder="https://portal.intuition.systems/explore/atom/0x..."
                   value={formData.intuitionLink}
                   onChange={handleInputChange}
                   className="bg-input border-border text-foreground"
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  If provided, link must start with "https://". This link will be displayed on your token's bonding
-                  curve page. Each token must have a unique link.
+                  Link must be in the exact format: https://portal.intuition.systems/explore/atom/0x... (without any
+                  additional paths or parameters). Each token must have a unique atom link.
                 </p>
               </div>
 
@@ -297,9 +305,7 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
               <Button
                 onClick={handleCreate}
                 className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground disabled:opacity-50"
-                disabled={
-                  isLoading || (formData.intuitionLink !== "" && !formData.intuitionLink.startsWith("https://"))
-                }
+                disabled={isLoading}
               >
                 {isLoading ? (
                   <>

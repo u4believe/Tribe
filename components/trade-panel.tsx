@@ -1,26 +1,44 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2 } from "lucide-react"
 import { useContract } from "@/hooks/use-contract"
 import { useWallet } from "@/hooks/use-wallet"
+import { getUserTokenBalance } from "@/lib/user-holdings"
+import { updateTokenInDatabase } from "@/lib/tokens"
+import { getTokenInfoWithRetry, getCurrentPrice } from "@/lib/contract-functions"
 import type { mockTokens } from "@/lib/mock-data"
 
 interface TradePanelProps {
   token: (typeof mockTokens)[0]
+  onTradeComplete?: () => void // Add callback to refresh token data
 }
 
-export default function TradePanel({ token }: TradePanelProps) {
+export default function TradePanel({ token, onTradeComplete }: TradePanelProps) {
   const [mode, setMode] = useState<"buy" | "sell">("buy")
   const [amount, setAmount] = useState("")
   const [trustAmount, setTrustAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [userBalance, setUserBalance] = useState("0")
   const { buyTokens, sellTokens } = useContract()
   const { address } = useWallet()
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (address && token.contractAddress) {
+        const balance = await getUserTokenBalance(token.contractAddress, address)
+        setUserBalance(balance)
+      } else {
+        setUserBalance("0")
+      }
+    }
+
+    fetchBalance()
+  }, [address, token.contractAddress])
 
   const handleAmountChange = (value: string) => {
     setAmount(value)
@@ -55,7 +73,7 @@ export default function TradePanel({ token }: TradePanelProps) {
       return
     }
 
-    if (!token.id || token.id === "") {
+    if (!token.contractAddress || token.contractAddress === "") {
       setError("Invalid token contract address")
       return
     }
@@ -66,18 +84,42 @@ export default function TradePanel({ token }: TradePanelProps) {
     try {
       if (mode === "buy") {
         const minTokensOut = (Number.parseFloat(amount) * 0.995).toFixed(6) // 0.5% slippage
-        console.log(
-          "[v0] Buying tokens - tokenAddress:",
-          token.id,
-          "trustAmount:",
-          trustAmount,
-          "minTokensOut:",
-          minTokensOut,
-        )
-        await buyTokens(token.id, trustAmount, minTokensOut)
+        await buyTokens(token.contractAddress, trustAmount, minTokensOut)
       } else {
-        console.log("[v0] Selling tokens - tokenAddress:", token.id, "tokenAmount:", amount)
-        await sellTokens(token.id, amount)
+        await sellTokens(token.contractAddress, amount)
+      }
+
+      if (token.contractAddress) {
+        const balance = await getUserTokenBalance(token.contractAddress, address)
+        setUserBalance(balance)
+
+        try {
+          console.log("[v0] Attempting to fetch updated token info...")
+          const tokenInfo = await getTokenInfoWithRetry(token.contractAddress)
+          const currentPrice = await getCurrentPrice(token.contractAddress)
+
+          if (tokenInfo && currentPrice) {
+            const marketCap = Number.parseFloat(tokenInfo.currentSupply) * Number.parseFloat(currentPrice)
+
+            await updateTokenInDatabase(token.contractAddress, {
+              currentPrice: Number.parseFloat(currentPrice),
+              currentSupply: Number.parseFloat(tokenInfo.currentSupply),
+              marketCap: marketCap,
+            })
+
+            console.log("[v0] Token data updated successfully")
+
+            // Trigger refresh in parent component
+            if (onTradeComplete) {
+              onTradeComplete()
+            }
+          } else {
+            console.log("[v0] Token data not ready yet, will update on next page load")
+          }
+        } catch (updateError) {
+          console.log("[v0] Token data update skipped - blockchain state not ready yet")
+          // Don't show error to user - trade was successful
+        }
       }
 
       // Reset form on success
@@ -94,6 +136,17 @@ export default function TradePanel({ token }: TradePanelProps) {
   return (
     <Card className="bg-card border-border p-6 sticky top-24">
       <h2 className="text-xl font-bold text-foreground mb-4">Trade</h2>
+
+      {address && token.contractAddress && (
+        <div className="mb-4 p-3 bg-muted/20 rounded-lg">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Your Balance</span>
+            <span className="font-semibold text-foreground">
+              {Number.parseFloat(userBalance).toFixed(2)} {token.symbol}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Mode Toggle */}
       <div className="grid grid-cols-2 gap-2 mb-6 bg-muted/30 p-1 rounded-lg">
@@ -134,7 +187,7 @@ export default function TradePanel({ token }: TradePanelProps) {
         </div>
 
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">Cost (TTRUST)</label>
+          <label className="text-sm text-muted-foreground mb-2 block">Cost (TRUST)</label>
           <Input
             type="number"
             placeholder="0.00"

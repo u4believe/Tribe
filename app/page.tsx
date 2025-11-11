@@ -5,6 +5,7 @@ import Header from "@/components/header"
 import CreateTokenModal from "@/components/create-token-modal"
 import TokenGrid from "@/components/token-grid"
 import BondingCurveView from "@/components/bonding-curve-view"
+import Footer from "@/components/footer"
 import { fetchAllTokens } from "@/lib/tokens"
 import type { MemeToken } from "@/lib/tokens"
 
@@ -15,26 +16,32 @@ export default function Home() {
   const [showAlphaRoom, setShowAlphaRoom] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const loadTokens = async () => {
-      setIsLoading(true)
-      try {
-        const fetchedTokens = await fetchAllTokens()
-        setTokens(fetchedTokens)
-      } catch (error) {
-        console.error("[v0] Failed to load tokens:", error)
-        setTokens([])
-      } finally {
-        setIsLoading(false)
-      }
+  const loadTokens = async () => {
+    setIsLoading(true)
+    try {
+      const fetchedTokens = await fetchAllTokens()
+      setTokens(fetchedTokens)
+    } catch (error) {
+      console.error("[v0] Failed to load tokens:", error)
+      setTokens([])
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     loadTokens()
   }, [])
 
   const handleCreateToken = (newToken: MemeToken) => {
     setTokens([newToken, ...tokens])
     setShowCreateModal(false)
+  }
+
+  const handleBackFromBondingCurve = () => {
+    setSelectedToken(null)
+    // Refresh tokens when returning to main view
+    loadTokens()
   }
 
   if (showAlphaRoom) {
@@ -57,27 +64,30 @@ export default function Home() {
             </button>
           </div>
         </div>
+        <Footer />
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="flex flex-col min-h-screen bg-background">
       <Header onCreateClick={() => setShowCreateModal(true)} onAlphaClick={() => setShowAlphaRoom(true)} />
 
       {selectedToken ? (
-        <BondingCurveView token={selectedToken} onBack={() => setSelectedToken(null)} />
+        <BondingCurveView token={selectedToken} onBack={handleBackFromBondingCurve} />
       ) : (
-        <div className="container mx-auto px-4 py-8">
+        <div className="flex-1 container mx-auto px-4 py-8">
           {isLoading ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">Loading tokens...</p>
             </div>
           ) : (
-            <TokenGrid tokens={tokens} onSelectToken={setSelectedToken} />
+            <TokenGrid tokens={tokens} onSelectToken={setSelectedToken} onTradeComplete={loadTokens} />
           )}
         </div>
       )}
+
+      <Footer />
 
       {showCreateModal && (
         <CreateTokenModal

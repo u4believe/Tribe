@@ -1,11 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ExternalLink } from "lucide-react"
 import BondingCurveChart from "@/components/bonding-curve-chart"
 import TradePanel from "@/components/trade-panel"
+import { fetchAllTokens } from "@/lib/tokens"
+import type { MemeToken } from "@/lib/tokens"
 import type { mockTokens } from "@/lib/mock-data"
 
 interface BondingCurveViewProps {
@@ -13,8 +15,29 @@ interface BondingCurveViewProps {
   onBack: () => void
 }
 
-export default function BondingCurveView({ token, onBack }: BondingCurveViewProps) {
+export default function BondingCurveView({ token: initialToken, onBack }: BondingCurveViewProps) {
   const [tradeMode, setTradeMode] = useState<"buy" | "sell">("buy")
+  const [token, setToken] = useState<MemeToken>(initialToken)
+
+  const handleTradeComplete = async () => {
+    console.log("[v0] Trade completed, refreshing token data...")
+    try {
+      // Fetch all tokens and find the updated one
+      const tokens = await fetchAllTokens()
+      const updatedToken = tokens.find((t) => t.contractAddress === token.contractAddress)
+
+      if (updatedToken) {
+        setToken(updatedToken)
+        console.log("[v0] Token data refreshed:", updatedToken)
+      }
+    } catch (error) {
+      console.error("[v0] Failed to refresh token data:", error)
+    }
+  }
+
+  useEffect(() => {
+    setToken(initialToken)
+  }, [initialToken])
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -95,25 +118,27 @@ export default function BondingCurveView({ token, onBack }: BondingCurveViewProp
                   />
                 </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Intuition Graph Portal</p>
-                <a
-                  href={token.intuitionLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
-                >
-                  View on Intuition
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
+              {token.intuitionLink && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Intuition Graph Portal</p>
+                  <a
+                    href={token.intuitionLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+                  >
+                    View on Intuition
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
             </div>
           </Card>
         </div>
 
         {/* Right Column - Trade Panel */}
         <div>
-          <TradePanel token={token} />
+          <TradePanel token={token} onTradeComplete={handleTradeComplete} />
         </div>
       </div>
     </div>

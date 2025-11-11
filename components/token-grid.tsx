@@ -5,9 +5,10 @@ import type { mockTokens } from "@/lib/mock-data"
 interface TokenGridProps {
   tokens: typeof mockTokens
   onSelectToken: (token: (typeof mockTokens)[0]) => void
+  onTradeComplete?: () => void // Add callback to refresh tokens after trade
 }
 
-export default function TokenGrid({ tokens, onSelectToken }: TokenGridProps) {
+export default function TokenGrid({ tokens, onSelectToken, onTradeComplete }: TokenGridProps) {
   const tribeOrientedTokens = tokens.filter((t) => t.intuitionLink && t.intuitionLink.trim() !== "")
   const allTokens = tokens.filter((t) => !t.intuitionLink || t.intuitionLink.trim() === "")
 
@@ -22,7 +23,12 @@ export default function TokenGrid({ tokens, onSelectToken }: TokenGridProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tribeOrientedTokens.map((token) => (
               <div key={token.id} className="alpha-glow rounded-xl">
-                <TokenCard token={token} onClick={() => onSelectToken(token)} isAlpha />
+                <TokenCard
+                  token={token}
+                  onClick={() => onSelectToken(token)}
+                  isAlpha
+                  onTradeComplete={onTradeComplete}
+                />
               </div>
             ))}
           </div>
@@ -37,7 +43,12 @@ export default function TokenGrid({ tokens, onSelectToken }: TokenGridProps) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {allTokens.map((token) => (
-              <TokenCard key={token.id} token={token} onClick={() => onSelectToken(token)} />
+              <TokenCard
+                key={token.id}
+                token={token}
+                onClick={() => onSelectToken(token)}
+                onTradeComplete={onTradeComplete}
+              />
             ))}
           </div>
         </section>

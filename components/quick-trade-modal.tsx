@@ -7,15 +7,23 @@ import { Input } from "@/components/ui/input"
 import { X, Loader2 } from "lucide-react"
 import { useContract } from "@/hooks/use-contract"
 import { useWallet } from "@/hooks/use-wallet"
+import { updateTokenInDatabase } from "@/lib/tokens"
+import { getTokenInfoWithRetry, getCurrentPrice } from "@/lib/contract-functions"
 import type { mockTokens } from "@/lib/mock-data"
 
 interface QuickTradeModalProps {
   token: (typeof mockTokens)[0]
   onClose: () => void
   initialMode?: "buy" | "sell"
+  onTradeComplete?: () => void // Add callback to refresh token data
 }
 
-export default function QuickTradeModal({ token, onClose, initialMode = "buy" }: QuickTradeModalProps) {
+export default function QuickTradeModal({
+  token,
+  onClose,
+  initialMode = "buy",
+  onTradeComplete,
+}: QuickTradeModalProps) {
   const [mode, setMode] = useState<"buy" | "sell">(initialMode)
   const [amount, setAmount] = useState("")
   const [trustAmount, setTrustAmount] = useState("")
@@ -64,6 +72,36 @@ export default function QuickTradeModal({ token, onClose, initialMode = "buy" }:
         await buyTokens(token.contractAddress, trustAmount, minTokensOut)
       } else {
         await sellTokens(token.contractAddress, amount)
+      }
+
+      if (token.contractAddress) {
+        try {
+          console.log("[v0] Attempting to fetch updated token info...")
+          const tokenInfo = await getTokenInfoWithRetry(token.contractAddress)
+          const currentPrice = await getCurrentPrice(token.contractAddress)
+
+          if (tokenInfo && currentPrice) {
+            const marketCap = Number.parseFloat(tokenInfo.currentSupply) * Number.parseFloat(currentPrice)
+
+            await updateTokenInDatabase(token.contractAddress, {
+              currentPrice: Number.parseFloat(currentPrice),
+              currentSupply: Number.parseFloat(tokenInfo.currentSupply),
+              marketCap: marketCap,
+            })
+
+            console.log("[v0] Token data updated successfully")
+
+            // Trigger refresh in parent component
+            if (onTradeComplete) {
+              onTradeComplete()
+            }
+          } else {
+            console.log("[v0] Token data not ready yet, will update on next page load")
+          }
+        } catch (updateError) {
+          console.log("[v0] Token data update skipped - blockchain state not ready yet")
+          // Don't show error to user - trade was successful
+        }
       }
 
       setAmount("")
@@ -127,7 +165,7 @@ export default function QuickTradeModal({ token, onClose, initialMode = "buy" }:
             </div>
 
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Cost (TTRUST)</label>
+              <label className="text-sm text-muted-foreground mb-2 block">Cost (TRUST)</label>
               <Input
                 type="number"
                 placeholder="0.00"

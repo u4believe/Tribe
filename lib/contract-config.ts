@@ -1,10 +1,10 @@
 export const CONTRACT_CONFIG = {
-  address: "0x10cC63b5190d519232570c3996E1080859abd8f7",
-  chainId: 13579,
+  address: "0xFd800FA84B797F273F82949BcAd1b08c48BB8D1b",
+  chainId: 1155,
   network: {
-    name: "Intuition Testnet",
-    rpcUrl: "https://testnet.rpc.intuition.systems",
-    currency: "TTRUST",
-    blockExplorer: "https://testnet.explorer.intuition.systems/",
+    name: "Intuition Mainnet",
+    rpcUrl: "https://rpc.intuition.systems",
+    currency: "TRUST",
+    blockExplorer: "https://intuition.calderaexplorer.xyz/",
   },
 } as const

@@ -1,8 +1,9 @@
-import { BrowserProvider, Contract, formatEther } from "ethers"
+import { BrowserProvider, Contract, formatEther, JsonRpcProvider } from "ethers"
 import { CONTRACT_CONFIG } from "./contract-config"
 import ABI from "./contract-abi.json"
 
 let provider: BrowserProvider | null = null
+let jsonProvider: JsonRpcProvider | null = null
 let signer: any = null
 
 export async function getProvider() {
@@ -17,6 +18,16 @@ export async function getProvider() {
   return provider
 }
 
+export async function getJsonProvider() {
+  if (!jsonProvider) {
+    jsonProvider = new JsonRpcProvider(CONTRACT_CONFIG.network.rpcUrl, {
+      name: CONTRACT_CONFIG.network.name,
+      chainId: CONTRACT_CONFIG.chainId,
+    })
+  }
+  return jsonProvider
+}
+
 export async function getSigner() {
   const prov = await getProvider()
   if (!signer) {
@@ -27,7 +38,20 @@ export async function getSigner() {
 
 export async function getContract() {
   const sig = await getSigner()
-  return new Contract(CONTRACT_CONFIG.address, ABI, sig)
+  // This prevents ethers.js from attempting ENS resolution on networks that don't support it
+  const jsonProv = await getJsonProvider()
+
+  // Create a contract with the signer, but attach the json provider for read-only calls
+  const contract = new Contract(CONTRACT_CONFIG.address, ABI, sig)
+
+  // Override the provider on the contract to use the JSON provider for read operations
+  Object.defineProperty(contract, "provider", {
+    value: jsonProv,
+    writable: true,
+    configurable: true,
+  })
+
+  return contract
 }
 
 export async function switchNetwork() {
@@ -87,7 +111,7 @@ export async function getConnectedAddress() {
 }
 
 export async function getBalance(address: string) {
-  const prov = await getProvider()
+  const prov = await getJsonProvider() // Use jsonProvider for read-only operations
   const balance = await prov.getBalance(address)
   return formatEther(balance)
 }
