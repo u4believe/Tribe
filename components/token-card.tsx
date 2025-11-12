@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { TrendingUp, Users, ExternalLink, ShoppingCart, TrendingDown } from "lucide-react"
+import { ShoppingCart, TrendingDown, ExternalLink, Copy } from "lucide-react"
 import { calculateBondingCurveProgress } from "@/lib/bonding-curve"
 import QuickTradeModal from "./quick-trade-modal"
 import type { mockTokens } from "@/lib/mock-data"
@@ -21,6 +21,7 @@ interface TokenCardProps {
 export default function TokenCard({ token, onClick, isAlpha, onTradeComplete }: TokenCardProps) {
   const [showTradeModal, setShowTradeModal] = useState(false)
   const [tradeMode, setTradeMode] = useState<"buy" | "sell">("buy")
+  const [copied, setCopied] = useState(false)
 
   console.log("[v0] TokenCard rendering with token:", {
     name: token.name,
@@ -47,6 +48,20 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete }: 
     e.stopPropagation()
     setTradeMode("sell")
     setShowTradeModal(true)
+  }
+
+  const handleCopyAddress = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    navigator.clipboard.writeText(token.contractAddress)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleIntuitionClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (token.intuitionLink) {
+      window.open(token.intuitionLink, "_blank", "noopener,noreferrer")
+    }
   }
 
   const handleTradeComplete = () => {
@@ -77,8 +92,46 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete }: 
                 <p className="text-xs text-muted-foreground">${token.symbol}</p>
               </div>
             </div>
-            {isAlpha && <Badge className="bg-accent text-accent-foreground text-xs">Alpha</Badge>}
+            <div className="flex flex-col gap-1">
+              {isAlpha && <Badge className="bg-accent text-accent-foreground text-xs">Alpha</Badge>}
+              {token.isCompleted && (
+                <Badge className="bg-orange-600 text-white text-xs whitespace-nowrap">Launch Complete</Badge>
+              )}
+            </div>
           </div>
+
+          {/* Contract Address section */}
+          <div className="flex items-center gap-2 pb-2 border-b border-border">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-muted-foreground">Contract Address</p>
+              <p className="text-xs font-mono text-foreground truncate">{token.contractAddress}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyAddress}
+              className="h-7 w-7 p-0 hover:bg-muted"
+              title="Copy address"
+            >
+              <Copy className={`w-3 h-3 ${copied ? "text-green-500" : ""}`} />
+            </Button>
+          </div>
+
+          {/* Intuition Link section */}
+          {token.intuitionLink && (
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground">Intuition Graph</p>
+                <button
+                  onClick={handleIntuitionClick}
+                  className="text-xs text-primary hover:underline flex items-center gap-1 truncate w-full"
+                >
+                  <span className="truncate">View on Intuition Portal</span>
+                  <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {token.creatorProfile && (token.creatorProfile.displayName || token.creatorProfile.profileImage) && (
             <div className="flex items-center gap-2 pb-2 border-b border-border">
@@ -125,66 +178,11 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete }: 
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-3.5 h-3.5 text-accent" />
-              <div>
-                <p className="text-xs text-muted-foreground">Change</p>
-                <p
-                  className={`font-semibold text-xs ${Number.parseFloat(priceChange) >= 0 ? "text-accent" : "text-destructive"}`}
-                >
-                  {Number.parseFloat(priceChange) >= 0 ? "+" : ""}
-                  {priceChange}%
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="w-3.5 h-3.5 text-secondary" />
-              <div>
-                <p className="text-xs text-muted-foreground">Holders</p>
-                <p className="font-semibold text-xs text-foreground">{token.holders}</p>
-              </div>
-            </div>
-          </div>
-
-          {token.intuitionLink && (
-            <div className="pt-2 border-t border-border">
-              <a
-                href={token.intuitionLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-xs"
-              >
-                View Identity
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-          )}
-
-          {token.contractAddress && (
-            <div className="pt-2 border-t border-border space-y-1">
-              <p className="text-xs text-muted-foreground">Contract Address</p>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-mono text-foreground truncate">{token.contractAddress}</p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    navigator.clipboard.writeText(token.contractAddress)
-                  }}
-                  className="text-xs text-primary hover:text-primary/80 transition-colors"
-                  title="Copy to clipboard"
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
             <Button
               onClick={handleBuyClick}
               size="sm"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2"
+              disabled={token.isCompleted}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               Buy
@@ -192,12 +190,21 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete }: 
             <Button
               onClick={handleSellClick}
               size="sm"
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground flex items-center justify-center gap-2"
+              disabled={token.isCompleted}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <TrendingDown className="w-3.5 h-3.5" />
               Sell
             </Button>
           </div>
+
+          {token.isCompleted && (
+            <div className="pt-2 border-t border-border">
+              <p className="text-xs text-center text-orange-600 font-medium">
+                Trading stopped - Token launch completed
+              </p>
+            </div>
+          )}
         </div>
       </Card>
 

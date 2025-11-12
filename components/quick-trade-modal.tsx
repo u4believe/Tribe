@@ -15,7 +15,7 @@ interface QuickTradeModalProps {
   token: (typeof mockTokens)[0]
   onClose: () => void
   initialMode?: "buy" | "sell"
-  onTradeComplete?: () => void // Add callback to refresh token data
+  onTradeComplete?: () => void
 }
 
 export default function QuickTradeModal({
@@ -58,6 +58,11 @@ export default function QuickTradeModal({
       return
     }
 
+    if (token.isCompleted) {
+      setError("Trading is disabled - Token launch has been completed")
+      return
+    }
+
     if (!amount || Number.parseFloat(amount) <= 0) {
       setError("Please enter a valid amount")
       return
@@ -68,7 +73,7 @@ export default function QuickTradeModal({
 
     try {
       if (mode === "buy") {
-        const minTokensOut = (Number.parseFloat(amount) * 0.99).toString() // Updated slippage from 0.5% to 1%
+        const minTokensOut = (Number.parseFloat(amount) * 0.99).toString()
         await buyTokens(token.contractAddress, trustAmount, minTokensOut)
       } else {
         await sellTokens(token.contractAddress, amount)
@@ -84,17 +89,17 @@ export default function QuickTradeModal({
             console.log("[v0] Updating token with:", {
               currentPrice: Number.parseFloat(currentPrice),
               currentSupply: Number.parseFloat(tokenInfo.currentSupply),
+              isCompleted: tokenInfo.completed,
             })
 
             await updateTokenInDatabase(token.contractAddress, {
               currentPrice: Number.parseFloat(currentPrice),
               currentSupply: Number.parseFloat(tokenInfo.currentSupply),
-              // Market cap will be auto-calculated using bonding curve formula
+              isCompleted: tokenInfo.completed,
             })
 
             console.log("[v0] Token data updated successfully")
 
-            // Trigger refresh in parent component
             if (onTradeComplete) {
               onTradeComplete()
             }
@@ -103,7 +108,6 @@ export default function QuickTradeModal({
           }
         } catch (updateError) {
           console.log("[v0] Token data update skipped - blockchain state not ready yet")
-          // Don't show error to user - trade was successful
         }
       }
 
@@ -129,13 +133,21 @@ export default function QuickTradeModal({
         </div>
 
         <div className="p-6 space-y-4">
+          {token.isCompleted && (
+            <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+              <p className="text-sm text-orange-600 font-medium text-center">
+                Trading Disabled - Token Launch Completed
+              </p>
+            </div>
+          )}
+
           {/* Mode Toggle */}
           <div className="grid grid-cols-2 gap-2 bg-muted/30 p-1 rounded-lg">
             <Button
               onClick={() => setMode("buy")}
               variant={mode === "buy" ? "default" : "ghost"}
               className={mode === "buy" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}
-              disabled={isLoading}
+              disabled={isLoading || token.isCompleted}
             >
               Buy
             </Button>
@@ -143,7 +155,7 @@ export default function QuickTradeModal({
               onClick={() => setMode("sell")}
               variant={mode === "sell" ? "default" : "ghost"}
               className={mode === "sell" ? "bg-destructive text-destructive-foreground" : "text-muted-foreground"}
-              disabled={isLoading}
+              disabled={isLoading || token.isCompleted}
             >
               Sell
             </Button>
@@ -163,7 +175,7 @@ export default function QuickTradeModal({
                 value={amount}
                 onChange={(e) => handleAmountChange(e.target.value)}
                 className="bg-input border-border text-foreground"
-                disabled={isLoading}
+                disabled={isLoading || token.isCompleted}
               />
             </div>
 
@@ -175,7 +187,7 @@ export default function QuickTradeModal({
                 value={trustAmount}
                 onChange={(e) => handleTrustChange(e.target.value)}
                 className="bg-input border-border text-foreground"
-                disabled={isLoading}
+                disabled={isLoading || token.isCompleted}
               />
             </div>
           </div>
@@ -188,14 +200,14 @@ export default function QuickTradeModal({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Slippage</span>
-              <span className="text-foreground font-semibold">1%</span> {/* Updated slippage display from 0.5% to 1% */}
+              <span className="text-foreground font-semibold">1%</span>
             </div>
           </div>
 
           {/* Action Button */}
           <Button
             onClick={handleTrade}
-            disabled={isLoading || !address}
+            disabled={isLoading || !address || token.isCompleted}
             className={`w-full font-semibold py-5 disabled:opacity-50 ${
               mode === "buy"
                 ? "bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -215,9 +227,11 @@ export default function QuickTradeModal({
           <p className="text-xs text-muted-foreground text-center">
             {!address
               ? "Connect wallet to trade"
-              : mode === "buy"
-                ? "Price increases as you buy"
-                : "Price decreases as you sell"}
+              : token.isCompleted
+                ? "Token launch completed - trading disabled"
+                : mode === "buy"
+                  ? "Price increases as you buy"
+                  : "Price decreases as you sell"}
           </p>
         </div>
       </Card>

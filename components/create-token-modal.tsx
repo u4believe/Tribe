@@ -129,6 +129,7 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
         intuitionLink: normalizedLink,
         isAlpha: true,
         contractAddress: tokenAddress,
+        isCompleted: false,
       }
 
       const savedToken = await createTokenInDatabase(newToken)

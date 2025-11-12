@@ -68,6 +68,11 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
       return
     }
 
+    if (token.isCompleted) {
+      setError("Trading is disabled - Token launch has been completed")
+      return
+    }
+
     if (!amount || Number.parseFloat(amount) <= 0) {
       setError("Please enter a valid amount")
       return
@@ -102,17 +107,17 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
             console.log("[v0] Updating token with:", {
               currentPrice: Number.parseFloat(currentPrice),
               currentSupply: Number.parseFloat(tokenInfo.currentSupply),
+              isCompleted: tokenInfo.completed,
             })
 
             await updateTokenInDatabase(token.contractAddress, {
               currentPrice: Number.parseFloat(currentPrice),
               currentSupply: Number.parseFloat(tokenInfo.currentSupply),
-              // Market cap will be auto-calculated using bonding curve formula
+              isCompleted: tokenInfo.completed,
             })
 
             console.log("[v0] Token data updated successfully")
 
-            // Trigger refresh in parent component
             if (onTradeComplete) {
               onTradeComplete()
             }
@@ -121,11 +126,9 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
           }
         } catch (updateError) {
           console.log("[v0] Token data update skipped - blockchain state not ready yet")
-          // Don't show error to user - trade was successful
         }
       }
 
-      // Reset form on success
       setAmount("")
       setTrustAmount("")
     } catch (err) {
@@ -151,13 +154,18 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
         </div>
       )}
 
-      {/* Mode Toggle */}
+      {token.isCompleted && (
+        <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+          <p className="text-sm text-orange-600 font-medium text-center">Trading Disabled - Token Launch Completed</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2 mb-6 bg-muted/30 p-1 rounded-lg">
         <Button
           onClick={() => setMode("buy")}
           variant={mode === "buy" ? "default" : "ghost"}
           className={mode === "buy" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}
-          disabled={isLoading}
+          disabled={isLoading || token.isCompleted}
         >
           Buy
         </Button>
@@ -165,7 +173,7 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
           onClick={() => setMode("sell")}
           variant={mode === "sell" ? "default" : "ghost"}
           className={mode === "sell" ? "bg-destructive text-destructive-foreground" : "text-muted-foreground"}
-          disabled={isLoading}
+          disabled={isLoading || token.isCompleted}
         >
           Sell
         </Button>
@@ -175,7 +183,6 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
         <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400 mb-4">{error}</div>
       )}
 
-      {/* Input Fields */}
       <div className="space-y-4 mb-6">
         <div>
           <label className="text-sm text-muted-foreground mb-2 block">Amount ({token.symbol})</label>
@@ -185,7 +192,7 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
             value={amount}
             onChange={(e) => handleAmountChange(e.target.value)}
             className="bg-input border-border text-foreground"
-            disabled={isLoading}
+            disabled={isLoading || token.isCompleted}
           />
         </div>
 
@@ -197,12 +204,11 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
             value={trustAmount}
             onChange={(e) => handleTrustChange(e.target.value)}
             className="bg-input border-border text-foreground"
-            disabled={isLoading}
+            disabled={isLoading || token.isCompleted}
           />
         </div>
       </div>
 
-      {/* Price Info */}
       <div className="space-y-2 mb-6 p-4 bg-muted/20 rounded-lg">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Price per token</span>
@@ -214,10 +220,9 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
         </div>
       </div>
 
-      {/* Action Button */}
       <Button
         onClick={handleTrade}
-        disabled={isLoading || !address}
+        disabled={isLoading || !address || token.isCompleted}
         className={`w-full font-semibold py-6 text-lg disabled:opacity-50 ${
           mode === "buy"
             ? "bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -234,13 +239,14 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
         )}
       </Button>
 
-      {/* Info */}
       <p className="text-xs text-muted-foreground mt-4 text-center">
         {!address
           ? "Connect wallet to trade"
-          : mode === "buy"
-            ? "Price increases as you buy"
-            : "Price decreases as you sell"}
+          : token.isCompleted
+            ? "Token launch completed - trading disabled"
+            : mode === "buy"
+              ? "Price increases as you buy"
+              : "Price decreases as you sell"}
       </p>
     </Card>
   )

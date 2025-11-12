@@ -16,6 +16,7 @@ export interface MemeToken {
   intuitionLink: string
   isAlpha: boolean
   contractAddress: string
+  isCompleted: boolean
   creatorProfile?: {
     displayName?: string
     profileImage?: string
@@ -37,6 +38,7 @@ interface SupabaseToken {
   intuition_link: string
   is_alpha: boolean
   contract_address: string
+  is_completed: boolean
   user_profiles?: {
     display_name?: string
     profile_image?: string
@@ -60,6 +62,7 @@ function supabaseToToken(data: SupabaseToken): MemeToken {
     intuitionLink: data.intuition_link,
     isAlpha: data.is_alpha,
     contractAddress: data.contract_address,
+    isCompleted: data.is_completed,
     creatorProfile: data.user_profiles
       ? {
           displayName: data.user_profiles.display_name,
@@ -219,6 +222,7 @@ export async function createTokenInDatabase(token: Omit<MemeToken, "id">): Promi
           intuition_link: token.intuitionLink || null,
           is_alpha: token.isAlpha,
           contract_address: token.contractAddress,
+          is_completed: token.isCompleted,
         },
       ])
       .select()
@@ -244,6 +248,7 @@ export async function updateTokenInDatabase(
     currentSupply?: number
     marketCap?: number
     holders?: number
+    isCompleted?: boolean
   },
 ): Promise<boolean> {
   try {
@@ -262,6 +267,7 @@ export async function updateTokenInDatabase(
     }
 
     if (updates.holders !== undefined) dbUpdates.holders = Math.floor(updates.holders)
+    if (updates.isCompleted !== undefined) dbUpdates.is_completed = updates.isCompleted
 
     const { error } = await supabase.from("meme_tokens").update(dbUpdates).eq("contract_address", contractAddress)
 
