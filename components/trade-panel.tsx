@@ -10,6 +10,7 @@ import { useWallet } from "@/hooks/use-wallet"
 import { getUserTokenBalance } from "@/lib/user-holdings"
 import { updateTokenInDatabase } from "@/lib/tokens"
 import { getTokenInfoWithRetry, getCurrentPrice } from "@/lib/contract-functions"
+import { trackTokenHolder } from "@/lib/holder-tracking"
 import type { mockTokens } from "@/lib/mock-data"
 
 interface TradePanelProps {
@@ -103,6 +104,10 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
         await buyTokens(token.contractAddress, trustAmount, minTokensOut)
       } else {
         await sellTokens(token.contractAddress, amount)
+      }
+
+      if (token.contractAddress && address) {
+        await trackTokenHolder(token.contractAddress, address)
       }
 
       if (token.contractAddress) {
