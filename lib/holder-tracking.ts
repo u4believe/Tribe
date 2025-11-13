@@ -4,11 +4,21 @@ import { getUserTokenBalance } from "@/lib/contract-functions"
 // Track a holder for a token (call this after buy/sell transactions)
 export async function trackTokenHolder(tokenAddress: string, holderAddress: string): Promise<void> {
   try {
+    console.log(`[v0] Tracking holder ${holderAddress} for token ${tokenAddress}`)
     const supabase = createClient()
 
     // Get the actual balance from the blockchain
     const balance = await getUserTokenBalance(tokenAddress, holderAddress)
     const balanceNum = Number.parseFloat(balance)
+    console.log(`[v0] Holder balance: ${balanceNum}`)
+
+    const { error: tableCheckError } = await supabase.from("token_holders").select("*").limit(1)
+
+    if (tableCheckError && tableCheckError.message.includes("does not exist")) {
+      console.warn("[v0] token_holders table does not exist yet. Run migration script 009.")
+      // Update holders count manually in meme_tokens if table doesn't exist
+      return
+    }
 
     // Upsert the holder record
     const { error } = await supabase.from("token_holders").upsert(
@@ -28,6 +38,7 @@ export async function trackTokenHolder(tokenAddress: string, holderAddress: stri
       return
     }
 
+    console.log("[v0] Holder tracked successfully, updating holder count...")
     // Update the holders count in meme_tokens table
     await updateHoldersCount(tokenAddress)
   } catch (error) {
@@ -61,7 +72,7 @@ export async function updateHoldersCount(tokenAddress: string): Promise<number> 
       .eq("contract_address", tokenAddress)
 
     if (updateError) {
-      console.error("[v0] Error updating holder count:", error)
+      console.error("[v0] Error updating holder count:", updateError)
     }
 
     console.log(`[v0] Updated holder count for ${tokenAddress}: ${holderCount}`)

@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, TrendingDown, ExternalLink, Copy } from "lucide-react"
+import { ShoppingCart, TrendingDown, ExternalLink, Copy, Users } from "lucide-react"
 import { calculateBondingCurveProgress } from "@/lib/bonding-curve"
 import QuickTradeModal from "./quick-trade-modal"
 import type { mockTokens } from "@/lib/mock-data"
@@ -160,6 +160,13 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete }: 
             <div className="flex justify-between items-center">
               <span className="text-xs text-muted-foreground">Market Cap</span>
               <span className="font-semibold text-sm text-foreground">${(token.marketCap ?? 0).toFixed(2)} TRUST</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                Holders
+              </span>
+              <span className="font-semibold text-sm text-foreground">{token.holders ?? 0}</span>
             </div>
           </div>
 
