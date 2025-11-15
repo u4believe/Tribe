@@ -18,7 +18,7 @@ interface TokenCardProps {
   onClick: () => void
   isAlpha?: boolean
   onTradeComplete?: () => void
-  onStarToggle?: () => void // Added callback for star toggle
+  onStarToggle?: () => void
 }
 
 export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, onStarToggle }: TokenCardProps) {
@@ -35,20 +35,13 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
     }
   }, [address, token.contractAddress])
 
-  console.log("[v0] TokenCard rendering with token:", {
-    name: token.name,
-    marketCap: token.marketCap,
-    currentSupply: token.currentSupply,
-    currentPrice: token.currentPrice,
-  })
-
   const currentPrice = token.currentPrice ?? 0
   const startPrice = token.startPrice ?? 0
 
   const priceChange =
     startPrice && startPrice !== 0 ? (((currentPrice - startPrice) / startPrice) * 100).toFixed(2) : "0.00"
 
-  const bondingCurveProgress = calculateBondingCurveProgress(token.currentSupply ?? 0) // use currentSupply instead of creatorSupplyPercent
+  const bondingCurveProgress = calculateBondingCurveProgress(token.currentSupply ?? 0)
 
   const handleBuyClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -85,26 +78,20 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
   const handleStarClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
     
-    console.log("[v0] Star button clicked")
-    
     if (!address) {
-      console.log("[v0] No wallet address, showing alert")
       alert("Please connect your wallet to star tokens")
       return
     }
 
-    console.log("[v0] Starting star toggle for token:", token.name)
     setIsStarring(true)
     try {
       const newStarredState = await toggleStarToken(address, token.contractAddress)
-      console.log("[v0] Star toggle result:", newStarredState)
       setIsStarred(newStarredState)
       if (onStarToggle) {
-        console.log("[v0] Calling onStarToggle callback")
         onStarToggle()
       }
     } catch (error) {
-      console.error("[v0] Failed to toggle star:", error)
+      console.error("Failed to toggle star:", error)
       alert("Failed to star/unstar token. Please try again.")
     } finally {
       setIsStarring(false)
@@ -201,11 +188,11 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
               <span className="text-xs text-muted-foreground">Bonding Curve</span>
               <span className="font-semibold text-xs text-accent">{bondingCurveProgress.toFixed(1)}%</span>
             </div>
-            <div className="w-full bg-muted/30 rounded-full h-1.5">
-              <div
-                className="bg-gradient-to-r from-primary to-accent h-1.5 rounded-full transition-all duration-300"
-                style={{ width: `${bondingCurveProgress}%` }}
-              />
+            <div
+              className="bg-muted/30 rounded-full h-1.5"
+              style={{ width: `${bondingCurveProgress}%` }}
+            >
+              <div className="bg-gradient-to-r from-primary to-accent h-1.5 rounded-full transition-all duration-300" />
             </div>
           </div>
 
