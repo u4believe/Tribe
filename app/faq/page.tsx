@@ -40,6 +40,30 @@ export default function FAQPage() {
       answer:
         "You can comment on any token by visiting its detail page. Each comment costs 0.025 TRUST and earns you 0.025 points.",
     },
+    {
+      question: "Can anyone pass a DEX Migration proposal or any other proposal?",
+      answer:
+        "No. Only the MemeLaunchpad can initiate a proposal when certain conditions have been met on the bonding curve.",
+    },
+    {
+      question: "Who can participate in a voting?",
+      answer: "Anyone holding at least 100,000 units of the meme token on the Launchpad.",
+    },
+    {
+      question: "Can a proposal be invalid?",
+      answer:
+        "Yes. If any of the following conditions are not met:\n\n• A total of >= 100 unique voters that participated in the proposal\n• A proposal that ends with no ties\n• A proposal that passes with the winning option receiving at least 59% of all votes",
+    },
+    {
+      question: "Can the Creator sell tokens after unlocking it for trading on the bonding curve?",
+      answer:
+        "Yes. The creator can sell bought tokens on the bonding curve anytime. It is good to note that selling does not reduce creator bought amount. So the creator can sell before reaching 2% and the token will unlock once their cumulative purchases reach 2% even if the creator sold some bought tokens. Also, once a token is unlocked, it stays unlocked even if the creator sells all their bag on the bonding curve.",
+    },
+    {
+      question: "How does TRIBE prevent a rug pull on DEX?",
+      answer:
+        "By introducing an LP lock logic. The LP is minted to the MemeLaunchpad contract which has no function that:\n\n• Transfers those LP tokens out\n• Approves the router to spend LP tokens or call any removeLiquidity function\n\nBecause only the contract itself (not the owner's EOA) can call approve/transfer on the LP token, and there is no such function exposed on the smart contract where the owner or anyone else can removeLiquidity or move LP tokens, therefore, LP is permanently locked forever.",
+    },
   ]
 
   return (
@@ -73,7 +97,9 @@ export default function FAQPage() {
                   />
                 </button>
                 {openIndex === index && (
-                  <div className="px-6 pb-6 text-muted-foreground border-t border-border pt-4">{faq.answer}</div>
+                  <div className="px-6 pb-6 text-muted-foreground border-t border-border pt-4 whitespace-pre-line">
+                    {faq.answer}
+                  </div>
                 )}
               </div>
             ))}
