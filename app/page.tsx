@@ -12,6 +12,7 @@ import { fetchAllTokens } from "@/lib/tokens"
 import { getStarredTokens } from "@/lib/starred-tokens"
 import { useWallet } from "@/hooks/use-wallet"
 import type { MemeToken } from "@/lib/tokens"
+import TVTTicker from "@/components/tvt-ticker"
 
 export default function Home() {
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -163,21 +164,16 @@ export default function Home() {
         <Sidebar />
         <div className="ml-16">
           <Header onCreateClick={() => setShowCreateModal(true)} onAlphaClick={() => setShowAlphaRoom(false)} />
-          <div className="container mx-auto px-4 py-8">
-            <div className="text-center space-y-6">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 blur-3xl animate-pulse" />
-                <h1 className="text-5xl font-bold text-foreground relative">✨ Alpha Room</h1>
-              </div>
-              <p className="text-xl text-muted-foreground">Private room for TRUST Card holders</p>
-              <p className="text-muted-foreground">Exclusive access to premium tokens and early opportunities</p>
-              <button
-                onClick={() => setShowAlphaRoom(false)}
-                className="mt-8 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold transition-colors"
-              >
-                Back to Launchpad
-              </button>
-            </div>
+          <div className="container mx-auto px-4 py-8 pt-36">
+            <h1 className="text-5xl font-bold text-foreground relative">✨ Alpha Room</h1>
+            <p className="text-xl text-muted-foreground">Private room for TRUST Card holders</p>
+            <p className="text-muted-foreground">Exclusive access to premium tokens and early opportunities</p>
+            <button
+              onClick={() => setShowAlphaRoom(false)}
+              className="mt-8 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold transition-colors"
+            >
+              Back to Launchpad
+            </button>
           </div>
           <Footer />
         </div>
@@ -192,10 +188,12 @@ export default function Home() {
         <Header onCreateClick={() => setShowCreateModal(true)} onAlphaClick={() => setShowAlphaRoom(true)} />
 
         {selectedToken ? (
-          <BondingCurveView token={selectedToken} onBack={handleBackFromBondingCurve} />
+          <div className="pt-36">
+            <BondingCurveView token={selectedToken} onBack={handleBackFromBondingCurve} />
+          </div>
         ) : (
-          <div className="container mx-auto px-4 py-8">
-            <div className="mb-6 w-full">
+          <div className="container mx-auto px-4 py-4 pt-36">
+            <div className="mb-4 w-full">
               <TokenFilters
                 activeFilter={activeFilter}
                 onFilterChange={setActiveFilter}
@@ -203,7 +201,11 @@ export default function Home() {
               />
             </div>
 
-            <div className="mb-8">
+            <div className="mb-4">
+              <TVTTicker />
+            </div>
+
+            <div className="mb-6">
               <div className="relative max-w-2xl mx-auto">
                 <input
                   type="text"

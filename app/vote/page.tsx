@@ -231,7 +231,7 @@ export default function VotePage() {
       <Sidebar />
       <Header />
 
-      <main className="ml-16 pt-20 p-4 md:p-6">
+      <main className="ml-16 pt-28 p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -306,9 +306,9 @@ export default function VotePage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Shield className="w-5 h-5 text-yellow-500" />
-                  Whitelist Management (20% Voting Power)
+                  Whitelist Management (20x Voting Power)
                 </CardTitle>
-                <CardDescription>Add creator addresses to give them 20% extra voting power</CardDescription>
+                <CardDescription>Add creator addresses to give them 20x voting power</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
@@ -461,7 +461,7 @@ export default function VotePage() {
                           <span
                             className={`flex items-center gap-1 ${timeRemaining.expired ? "text-red-500" : "text-primary"}`}
                           >
-                            <Timer className="w-3 h-3" />
+                            <Timer className="w-4 h-4" />
                             {timeRemaining.text}
                           </span>
                         </div>
@@ -514,7 +514,7 @@ export default function VotePage() {
                                 ) : (
                                   <>
                                     <ThumbsUp className="w-4 h-4 mr-2" />
-                                    Yes
+                                    Vote Yes
                                   </>
                                 )}
                               </Button>
@@ -528,7 +528,7 @@ export default function VotePage() {
                                 ) : (
                                   <>
                                     <ThumbsDown className="w-4 h-4 mr-2" />
-                                    No
+                                    Vote No
                                   </>
                                 )}
                               </Button>
@@ -537,15 +537,8 @@ export default function VotePage() {
                         </div>
                       )}
 
-                      {isExpired && !validity && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="w-4 h-4" />
-                          Voting period has ended
-                        </div>
-                      )}
-
                       {!isConnected && !isExpired && (
-                        <p className="text-sm text-muted-foreground text-center">Connect your wallet to vote</p>
+                        <p className="text-sm text-muted-foreground text-center">Connect wallet to vote</p>
                       )}
                     </CardContent>
                   </Card>

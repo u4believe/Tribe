@@ -44,11 +44,11 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 h-screen w-16 bg-card border-r border-border z-40 flex flex-col">
       {/* Logo section - hidden in icon-only mode */}
-      <div className="h-20 flex items-center justify-center border-b border-border">
+      <div className="h-[120px] flex items-center justify-center border-b border-border">
         <Image src="/tribe-logo.png" alt="TRIBE" width={32} height={32} className="object-contain" />
       </div>
 
-      <nav className="flex-1 pt-16 pb-4">
+      <nav className="flex-1 pt-4 pb-4">
         <ul className="space-y-2 px-2">
           {navItems.map((item) => {
             const Icon = item.icon

@@ -10,24 +10,19 @@
   --card-foreground: oklch(0.95 0 0);
   --popover: oklch(0.12 0 0);
   --popover-foreground: oklch(0.95 0 0);
-  /* Updated primary color to match TRIBE logo cyan/turquoise */
   --primary: oklch(0.65 0.25 200);
   --primary-foreground: oklch(0.08 0 0);
-  /* Updated secondary to gray to match TRIBE logo accent */
   --secondary: oklch(0.5 0.05 0);
   --secondary-foreground: oklch(0.95 0 0);
   --muted: oklch(0.25 0 0);
   --muted-foreground: oklch(0.65 0 0);
-  /* Updated accent to bright cyan for highlights */
   --accent: oklch(0.7 0.28 200);
   --accent-foreground: oklch(0.08 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.95 0 0);
   --border: oklch(0.2 0 0);
   --input: oklch(0.15 0 0);
-  /* Updated ring to match primary cyan */
   --ring: oklch(0.65 0.25 200);
-  /* Updated chart colors to use cyan and gray palette */
   --chart-1: oklch(0.7 0.28 200);
   --chart-2: oklch(0.6 0.1 200);
   --chart-3: oklch(0.5 0.05 0);
@@ -36,14 +31,11 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.1 0 0);
   --sidebar-foreground: oklch(0.95 0 0);
-  /* Updated sidebar primary to cyan */
   --sidebar-primary: oklch(0.65 0.25 200);
   --sidebar-primary-foreground: oklch(0.08 0 0);
-  /* Updated sidebar accent to cyan */
   --sidebar-accent: oklch(0.7 0.28 200);
   --sidebar-accent-foreground: oklch(0.08 0 0);
   --sidebar-border: oklch(0.2 0 0);
-  /* Updated sidebar ring to cyan */
   --sidebar-ring: oklch(0.65 0.25 200);
 }
 
@@ -54,24 +46,19 @@
   --card-foreground: oklch(0.95 0 0);
   --popover: oklch(0.12 0 0);
   --popover-foreground: oklch(0.95 0 0);
-  /* Updated primary color to match TRIBE logo cyan/turquoise */
   --primary: oklch(0.65 0.25 200);
   --primary-foreground: oklch(0.08 0 0);
-  /* Updated secondary to gray to match TRIBE logo accent */
   --secondary: oklch(0.5 0.05 0);
   --secondary-foreground: oklch(0.95 0 0);
   --muted: oklch(0.25 0 0);
   --muted-foreground: oklch(0.65 0 0);
-  /* Updated accent to bright cyan for highlights */
   --accent: oklch(0.7 0.28 200);
   --accent-foreground: oklch(0.08 0 0);
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.95 0 0);
   --border: oklch(0.2 0 0);
   --input: oklch(0.15 0 0);
-  /* Updated ring to match primary cyan */
   --ring: oklch(0.65 0.25 200);
-  /* Updated chart colors to use cyan and gray palette */
   --chart-1: oklch(0.7 0.28 200);
   --chart-2: oklch(0.6 0.1 200);
   --chart-3: oklch(0.5 0.05 0);
@@ -79,14 +66,11 @@
   --chart-5: oklch(0.55 0.15 200);
   --sidebar: oklch(0.1 0 0);
   --sidebar-foreground: oklch(0.95 0 0);
-  /* Updated sidebar primary to cyan */
   --sidebar-primary: oklch(0.65 0.25 200);
   --sidebar-primary-foreground: oklch(0.08 0 0);
-  /* Updated sidebar accent to cyan */
   --sidebar-accent: oklch(0.7 0.28 200);
   --sidebar-accent-foreground: oklch(0.08 0 0);
   --sidebar-border: oklch(0.2 0 0);
-  /* Updated sidebar ring to cyan */
   --sidebar-ring: oklch(0.65 0.25 200);
 }
 
@@ -135,9 +119,34 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body {
+    @apply overflow-x-hidden;
+  }
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Hide scrollbars globally while still allowing scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar on all elements by default */
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 @keyframes alpha-glow {
@@ -167,4 +176,17 @@
   background: linear-gradient(90deg, transparent, rgba(0, 200, 255, 0.2), transparent);
   background-size: 1000px 100%;
   animation: alpha-shimmer 3s infinite;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
 }

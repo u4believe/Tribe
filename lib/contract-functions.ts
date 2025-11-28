@@ -347,8 +347,12 @@ export async function addTokenComment(tokenAddress: string, commentText: string)
 
 export async function getTokenComments(tokenAddress: string) {
   try {
-    const jsonProvider = await getJsonProvider()
-    const readOnlyContract = new Contract(CONTRACT_CONFIG.address, ABI, jsonProvider)
+    const { JsonRpcProvider, Contract } = await import("ethers")
+    const freshProvider = new JsonRpcProvider(CONTRACT_CONFIG.network.rpcUrl, {
+      name: CONTRACT_CONFIG.network.name,
+      chainId: CONTRACT_CONFIG.chainId,
+    })
+    const readOnlyContract = new Contract(CONTRACT_CONFIG.address, ABI, freshProvider)
     const comments = await readOnlyContract.getComments(tokenAddress)
 
     return comments.map((comment: any) => ({
@@ -508,4 +512,36 @@ export async function getBatchUserVolumes(
   }
 
   return volumeMap
+}
+
+export async function getTotalTVT(): Promise<string> {
+  try {
+    const { JsonRpcProvider, Contract } = await import("ethers")
+    const freshProvider = new JsonRpcProvider(CONTRACT_CONFIG.network.rpcUrl, {
+      name: CONTRACT_CONFIG.network.name,
+      chainId: CONTRACT_CONFIG.chainId,
+    })
+    const readOnlyContract = new Contract(CONTRACT_CONFIG.address, ABI, freshProvider)
+    const totalTVT = await readOnlyContract.getTotalTVT()
+    return formatEther(totalTVT)
+  } catch (error) {
+    console.error("Failed to get total TVT:", error)
+    return "0"
+  }
+}
+
+export async function getTokenTVT(tokenAddress: string): Promise<string> {
+  try {
+    const { JsonRpcProvider, Contract } = await import("ethers")
+    const freshProvider = new JsonRpcProvider(CONTRACT_CONFIG.network.rpcUrl, {
+      name: CONTRACT_CONFIG.network.name,
+      chainId: CONTRACT_CONFIG.chainId,
+    })
+    const readOnlyContract = new Contract(CONTRACT_CONFIG.address, ABI, freshProvider)
+    const tokenTVT = await readOnlyContract.getTokenTVT(tokenAddress)
+    return formatEther(tokenTVT)
+  } catch (error) {
+    console.error("Failed to get token TVT:", error)
+    return "0"
+  }
 }

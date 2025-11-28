@@ -152,7 +152,7 @@ export default function SettingsPage() {
     return (
       <main className="min-h-screen bg-background">
         <Header onCreateClick={() => {}} />
-        <div className="container mx-auto px-4 py-12 text-center">
+        <div className="container mx-auto px-4 py-12 pt-36 text-center">
           <h1 className="text-3xl font-bold text-foreground mb-4">Settings</h1>
           <p className="text-muted-foreground">Connect your wallet to access settings</p>
         </div>
@@ -163,8 +163,7 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen bg-background">
       <Header onCreateClick={() => {}} />
-
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="container mx-auto px-4 py-8 pt-36 max-w-2xl">
         <Button onClick={() => router.push("/")} variant="ghost" className="mb-6">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Launchpad

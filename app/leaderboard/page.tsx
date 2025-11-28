@@ -107,8 +107,7 @@ export default function LeaderboardPage() {
 
       <div className="flex-1 ml-16">
         <Header onCreateClick={() => {}} />
-
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 pt-28">
           <div className="text-center space-y-4 mb-12">
             <div className="flex items-center justify-center gap-3">
               <Trophy className="w-10 h-10 text-primary" />
