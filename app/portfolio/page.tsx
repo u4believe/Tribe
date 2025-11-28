@@ -5,7 +5,6 @@ import { useWallet } from "@/hooks/use-wallet"
 import { fetchAllTokens, type MemeToken } from "@/lib/tokens"
 import { getUserTokenBalance } from "@/lib/user-holdings"
 import { getUserPoints, updateUserPoints } from "@/lib/points-system"
-import Header from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, TrendingUp, Coins, Award, RefreshCw, AlertCircle } from "lucide-react"
@@ -99,9 +98,8 @@ export default function PortfolioPage() {
 
   if (!address) {
     return (
-      <main className="min-h-screen bg-background">
-        <Header onCreateClick={() => {}} />
-        <div className="container mx-auto px-4 py-12 pt-36 text-center">
+      <main className="min-h-screen bg-background pt-36">
+        <div className="container mx-auto px-4 py-12 text-center">
           <h1 className="text-3xl font-bold text-foreground mb-4">Portfolio</h1>
           <p className="text-muted-foreground">Connect your wallet to view your portfolio</p>
         </div>
@@ -110,9 +108,8 @@ export default function PortfolioPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <Header onCreateClick={() => {}} />
-      <div className="container mx-auto px-4 py-8 pt-36">
+    <main className="min-h-screen bg-background pt-36">
+      <div className="container mx-auto px-4 py-8">
         <Button onClick={() => router.push("/")} variant="ghost" className="mb-6">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Launchpad
