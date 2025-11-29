@@ -24,6 +24,7 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [userBalance, setUserBalance] = useState("0")
+  const [trustBalance, setTrustBalance] = useState("0") // Added state for user's TRUST balance
   const { buyTokens, sellTokens } = useContract()
   const { address } = useWallet()
 
@@ -39,6 +40,30 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
 
     fetchBalance()
   }, [address, token.contractAddress])
+
+  useEffect(() => {
+    const fetchTrustBalance = async () => {
+      if (address && typeof window !== "undefined" && window.ethereum) {
+        try {
+          const { BrowserProvider, formatEther } = await import("ethers")
+          const provider = new BrowserProvider(window.ethereum)
+          const balance = await provider.getBalance(address)
+          setTrustBalance(formatEther(balance))
+        } catch (error) {
+          console.error("Failed to fetch TRUST balance:", error)
+          setTrustBalance("0")
+        }
+      } else {
+        setTrustBalance("0")
+      }
+    }
+
+    fetchTrustBalance()
+
+    // Refresh balance every 10 seconds
+    const interval = setInterval(fetchTrustBalance, 10000)
+    return () => clearInterval(interval)
+  }, [address])
 
   const handleAmountChange = (value: string) => {
     setAmount(value)
@@ -208,7 +233,12 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
         </div>
 
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">Cost (TRUST)</label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-sm text-muted-foreground">Cost (TRUST)</label>
+            {address && (
+              <span className="text-xs text-primary">Balance: {Number.parseFloat(trustBalance).toFixed(4)} TRUST</span>
+            )}
+          </div>
           <Input
             type="number"
             placeholder="0.00"
