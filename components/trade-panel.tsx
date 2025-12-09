@@ -87,6 +87,28 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
     }
   }
 
+  const handlePercentageClick = (percentage: number) => {
+    if (mode === "buy") {
+      // Use percentage of TRUST balance for buying
+      const trustToUse = (Number.parseFloat(trustBalance) * percentage) / 100
+      if (trustToUse > 0) {
+        const currentPrice = token.currentPrice || 0.0001533
+        const tokensToGet = trustToUse / currentPrice
+        setTrustAmount(trustToUse.toFixed(6))
+        setAmount(tokensToGet.toFixed(6))
+      }
+    } else {
+      // Use percentage of token balance for selling
+      const tokensToSell = (Number.parseFloat(userBalance) * percentage) / 100
+      if (tokensToSell > 0) {
+        const currentPrice = token.currentPrice || 0.0001533
+        const trustToGet = tokensToSell * currentPrice
+        setAmount(tokensToSell.toFixed(6))
+        setTrustAmount(trustToGet.toFixed(6))
+      }
+    }
+  }
+
   const handleTrade = async () => {
     if (!address) {
       setError("Please connect your wallet first")
@@ -230,6 +252,23 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
             className="bg-input border-border text-foreground"
             disabled={isLoading || token.isCompleted}
           />
+          {mode === "sell" && address && (
+            <div className="flex gap-2 mt-2">
+              {[20, 50, 75, 100].map((percent) => (
+                <Button
+                  key={percent}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePercentageClick(percent)}
+                  disabled={isLoading || token.isCompleted || Number.parseFloat(userBalance) <= 0}
+                  className="flex-1 text-xs h-7 border-border hover:bg-destructive/20 hover:text-destructive hover:border-destructive"
+                >
+                  {percent}%
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
@@ -247,6 +286,23 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
             className="bg-input border-border text-foreground"
             disabled={isLoading || token.isCompleted}
           />
+          {mode === "buy" && address && (
+            <div className="flex gap-2 mt-2">
+              {[20, 50, 75, 100].map((percent) => (
+                <Button
+                  key={percent}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePercentageClick(percent)}
+                  disabled={isLoading || token.isCompleted || Number.parseFloat(trustBalance) <= 0}
+                  className="flex-1 text-xs h-7 border-border hover:bg-primary/20 hover:text-primary hover:border-primary"
+                >
+                  {percent}%
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
