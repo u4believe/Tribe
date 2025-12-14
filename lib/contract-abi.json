@@ -581,6 +581,19 @@
   },
   {
     "type": "function",
+    "name": "setDexRouter",
+    "inputs": [
+      {
+        "name": "newDexRouter",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "tokenInfo",
     "inputs": [
       {
@@ -725,6 +738,25 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "DEXRouterUpdated",
+    "inputs": [
+      {
+        "name": "oldRouter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newRouter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
   },
   {
     "type": "event",

@@ -17,7 +17,8 @@ export interface MemeToken {
   isAlpha: boolean
   contractAddress: string
   isCompleted: boolean
-  createdAt: string // Added to track token creation date
+  createdAt: string
+  factoryAddress?: string // Added factory contract address field
   creatorProfile?: {
     displayName?: string
     profileImage?: string
@@ -40,7 +41,8 @@ interface SupabaseToken {
   is_alpha: boolean
   contract_address: string
   is_completed: boolean
-  created_at: string // Added to track token creation date
+  created_at: string
+  factory_address?: string // Added factory contract address field
   user_profiles?: {
     display_name?: string
     profile_image?: string
@@ -65,7 +67,8 @@ function supabaseToToken(data: SupabaseToken): MemeToken {
     isAlpha: data.is_alpha,
     contractAddress: data.contract_address,
     isCompleted: data.is_completed,
-    createdAt: data.created_at, // Map created_at field
+    createdAt: data.created_at,
+    factoryAddress: data.factory_address, // Map factory address field
     creatorProfile: data.user_profiles
       ? {
           displayName: data.user_profiles.display_name,
@@ -122,7 +125,8 @@ export async function fetchAllTokens(): Promise<MemeToken[]> {
         is_alpha,
         contract_address,
         is_completed,
-        created_at
+        created_at,
+        factory_address
       `)
       .order("created_at", { ascending: false })
 
@@ -161,6 +165,7 @@ export async function fetchAllTokens(): Promise<MemeToken[]> {
       const profile = profileMap.get(token.creator)
       return supabaseToToken({
         ...token,
+        factory_address: token.factory_address,
         user_profiles: profile
           ? {
               display_name: profile.display_name,
@@ -288,7 +293,7 @@ export async function createTokenInDatabase(token: Omit<MemeToken, "id">): Promi
     const createdAt = token.createdAt || new Date().toISOString()
     console.log("[v0] Using timestamp:", createdAt)
 
-    const insertData = {
+    const insertData: any = {
       name: token.name,
       symbol: token.symbol,
       image: token.image,
@@ -304,6 +309,11 @@ export async function createTokenInDatabase(token: Omit<MemeToken, "id">): Promi
       contract_address: token.contractAddress,
       is_completed: token.isCompleted,
       created_at: createdAt,
+    }
+
+    // Only add factory_address if it's provided (for backward compatibility)
+    if (token.factoryAddress) {
+      insertData.factory_address = token.factoryAddress
     }
 
     console.log("[v0] Inserting token data:", insertData)

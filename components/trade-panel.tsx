@@ -4,17 +4,24 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2 } from "lucide-react"
+import { Loader2, AlertTriangle, Lock } from "lucide-react"
 import { useContract } from "@/hooks/use-contract"
 import { useWallet } from "@/hooks/use-wallet"
 import { getUserTokenBalance } from "@/lib/user-holdings"
 import { updateTokenInDatabase } from "@/lib/tokens"
-import { getTokenInfoWithRetry, getCurrentPrice } from "@/lib/contract-functions"
+import {
+  getTokenInfoWithRetry,
+  getCurrentPrice,
+  getContractTrustBalance,
+  isTokenCompleted,
+  isTokenUnlocked,
+} from "@/lib/contract-functions"
 import type { mockTokens } from "@/lib/mock-data"
+import { CONTRACT_ADDRESS } from "@/lib/contract-config"
 
 interface TradePanelProps {
   token: (typeof mockTokens)[0]
-  onTradeComplete?: () => void // Add callback to refresh token data
+  onTradeComplete?: () => void
 }
 
 export default function TradePanel({ token, onTradeComplete }: TradePanelProps) {
@@ -24,9 +31,42 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [userBalance, setUserBalance] = useState("0")
-  const [trustBalance, setTrustBalance] = useState("0") // Added state for user's TRUST balance
+  const [trustBalance, setTrustBalance] = useState("0")
+  const [contractBalance, setContractBalance] = useState("0")
+  const [tokenCompleted, setTokenCompleted] = useState(false)
+  const [tokenUnlocked, setTokenUnlocked] = useState(true)
+  const [checkingStatus, setCheckingStatus] = useState(true)
   const { buyTokens, sellTokens } = useContract()
   const { address } = useWallet()
+
+  useEffect(() => {
+    const checkTokenStatus = async () => {
+      if (!token.contractAddress) return
+
+      setCheckingStatus(true)
+      try {
+        const [completed, unlocked] = await Promise.all([
+          isTokenCompleted(token.contractAddress),
+          isTokenUnlocked(token.contractAddress),
+        ])
+
+        console.log("[v0] Token status:", {
+          address: token.contractAddress,
+          completed,
+          unlocked,
+        })
+
+        setTokenCompleted(completed)
+        setTokenUnlocked(unlocked)
+      } catch (error) {
+        console.error("[v0] Failed to check token status:", error)
+      } finally {
+        setCheckingStatus(false)
+      }
+    }
+
+    checkTokenStatus()
+  }, [token.contractAddress])
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -60,10 +100,26 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
 
     fetchTrustBalance()
 
-    // Refresh balance every 10 seconds
     const interval = setInterval(fetchTrustBalance, 10000)
     return () => clearInterval(interval)
   }, [address])
+
+  useEffect(() => {
+    const fetchContractBalance = async () => {
+      try {
+        const balance = await getContractTrustBalance(CONTRACT_ADDRESS)
+        setContractBalance(balance)
+      } catch (error) {
+        console.error("Failed to fetch contract TRUST balance:", error)
+        setContractBalance("0")
+      }
+    }
+
+    fetchContractBalance()
+
+    const interval = setInterval(fetchContractBalance, 15000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleAmountChange = (value: string) => {
     setAmount(value)
@@ -89,7 +145,6 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
 
   const handlePercentageClick = (percentage: number) => {
     if (mode === "buy") {
-      // Use percentage of TRUST balance for buying
       const trustToUse = (Number.parseFloat(trustBalance) * percentage) / 100
       if (trustToUse > 0) {
         const currentPrice = token.currentPrice || 0.0001533
@@ -98,7 +153,6 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
         setAmount(tokensToGet.toFixed(6))
       }
     } else {
-      // Use percentage of token balance for selling
       const tokensToSell = (Number.parseFloat(userBalance) * percentage) / 100
       if (tokensToSell > 0) {
         const currentPrice = token.currentPrice || 0.0001533
@@ -115,8 +169,8 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
       return
     }
 
-    if (token.isCompleted) {
-      setError("Trading is disabled - Token launch has been completed")
+    if (tokenCompleted) {
+      setError("Trading is disabled - Token launch has been completed and migrated to DEX")
       return
     }
 
@@ -149,6 +203,32 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
         })
         await buyTokens(token.contractAddress, trustAmount, minTokensOut)
       } else {
+        const expectedTrust = Number.parseFloat(amount) * (token.currentPrice || 0.0001533) * 0.97
+        const availableBalance = Number.parseFloat(contractBalance)
+
+        if (availableBalance === 0) {
+          setError(
+            `Cannot sell: Contract has 0 TRUST balance. The contract needs buyers to deposit TRUST before sellers can withdraw. Please wait for buy orders.`,
+          )
+          setIsLoading(false)
+          return
+        }
+
+        if (availableBalance < expectedTrust) {
+          const willReceive = Math.min(expectedTrust, availableBalance)
+          const shortfall = expectedTrust - willReceive
+
+          setError(
+            `WARNING: Contract has insufficient TRUST. You will receive ${willReceive.toFixed(6)} TRUST instead of ${expectedTrust.toFixed(6)} TRUST (shortfall: ${shortfall.toFixed(6)} TRUST). The contract needs more buyers.`,
+          )
+
+          await new Promise((resolve) => setTimeout(resolve, 3000))
+        }
+
+        console.log("[v0] Selling tokens:", {
+          contractAddress: token.contractAddress,
+          amount,
+        })
         await sellTokens(token.contractAddress, amount)
       }
 
@@ -197,9 +277,52 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
     }
   }
 
+  const expectedTrustReceived =
+    mode === "sell" && amount
+      ? Math.min(
+          Number.parseFloat(amount) * (token.currentPrice || 0.0001533) * 0.97,
+          Number.parseFloat(contractBalance),
+        )
+      : null
+
+  if (checkingStatus) {
+    return (
+      <Card className="bg-card border-border p-6 sticky top-24">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Checking token status...</span>
+        </div>
+      </Card>
+    )
+  }
+
   return (
     <Card className="bg-card border-border p-6 sticky top-24">
       <h2 className="text-xl font-bold text-foreground mb-4">Trade</h2>
+
+      {tokenCompleted && (
+        <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg flex items-start gap-2">
+          <Lock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-orange-600 font-medium">Token Launch Completed</p>
+            <p className="text-xs text-orange-500 mt-1">
+              This token has been migrated to DEX. Trading on the bonding curve is now disabled.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!tokenUnlocked && !tokenCompleted && (
+        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-2">
+          <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-yellow-600 font-medium">Token Locked</p>
+            <p className="text-xs text-yellow-500 mt-1">
+              This token is currently locked. Wait for more buys to unlock trading.
+            </p>
+          </div>
+        </div>
+      )}
 
       {address && token.contractAddress && (
         <div className="mb-4 p-3 bg-muted/20 rounded-lg">
@@ -212,9 +335,36 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
         </div>
       )}
 
-      {token.isCompleted && (
-        <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-          <p className="text-sm text-orange-600 font-medium text-center">Trading Disabled - Token Launch Completed</p>
+      {mode === "sell" && !tokenCompleted && (
+        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-sm text-blue-400">Contract TRUST Balance</span>
+            <span className="font-semibold text-blue-300">{Number.parseFloat(contractBalance).toFixed(4)} TRUST</span>
+          </div>
+          {expectedTrustReceived !== null && (
+            <div className="flex justify-between items-center mt-2 pt-2 border-t border-blue-500/20">
+              <span className="text-xs text-blue-400">You will receive</span>
+              <span
+                className={`font-semibold text-xs ${
+                  expectedTrustReceived < (Number.parseFloat(amount) * (token.currentPrice || 0.0001533) * 0.97)
+                    ? "text-orange-400"
+                    : "text-green-400"
+                }`}
+              >
+                ~{expectedTrustReceived.toFixed(6)} TRUST
+              </span>
+            </div>
+          )}
+          {Number.parseFloat(contractBalance) === 0 && (
+            <p className="text-xs text-red-400 mt-2 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              Contract has 0 TRUST. Cannot process sells until buyers add TRUST.
+            </p>
+          )}
+          {expectedTrustReceived !== null &&
+            expectedTrustReceived < Number.parseFloat(amount) * (token.currentPrice || 0.0001533) * 0.97 && (
+              <p className="text-xs text-orange-400 mt-2">Limited by contract balance. Wait for buyers to add TRUST.</p>
+            )}
         </div>
       )}
 
@@ -223,7 +373,7 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
           onClick={() => setMode("buy")}
           variant={mode === "buy" ? "default" : "ghost"}
           className={mode === "buy" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}
-          disabled={isLoading || token.isCompleted}
+          disabled={isLoading || tokenCompleted}
         >
           Buy
         </Button>
@@ -231,7 +381,7 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
           onClick={() => setMode("sell")}
           variant={mode === "sell" ? "default" : "ghost"}
           className={mode === "sell" ? "bg-destructive text-destructive-foreground" : "text-muted-foreground"}
-          disabled={isLoading || token.isCompleted}
+          disabled={isLoading || tokenCompleted || Number.parseFloat(contractBalance) === 0}
         >
           Sell
         </Button>
@@ -250,7 +400,7 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
             value={amount}
             onChange={(e) => handleAmountChange(e.target.value)}
             className="bg-input border-border text-foreground"
-            disabled={isLoading || token.isCompleted}
+            disabled={isLoading || tokenCompleted}
           />
           {mode === "sell" && address && (
             <div className="flex gap-2 mt-2">
@@ -261,7 +411,7 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
                   variant="outline"
                   size="sm"
                   onClick={() => handlePercentageClick(percent)}
-                  disabled={isLoading || token.isCompleted || Number.parseFloat(userBalance) <= 0}
+                  disabled={isLoading || tokenCompleted || Number.parseFloat(userBalance) <= 0}
                   className="flex-1 text-xs h-7 border-border hover:bg-destructive/20 hover:text-destructive hover:border-destructive"
                 >
                   {percent}%
@@ -284,7 +434,7 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
             value={trustAmount}
             onChange={(e) => handleTrustChange(e.target.value)}
             className="bg-input border-border text-foreground"
-            disabled={isLoading || token.isCompleted}
+            disabled={isLoading || tokenCompleted}
           />
           {mode === "buy" && address && (
             <div className="flex gap-2 mt-2">
@@ -295,7 +445,7 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
                   variant="outline"
                   size="sm"
                   onClick={() => handlePercentageClick(percent)}
-                  disabled={isLoading || token.isCompleted || Number.parseFloat(trustBalance) <= 0}
+                  disabled={isLoading || tokenCompleted || Number.parseFloat(trustBalance) <= 0}
                   className="flex-1 text-xs h-7 border-border hover:bg-primary/20 hover:text-primary hover:border-primary"
                 >
                   {percent}%
@@ -319,7 +469,9 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
 
       <Button
         onClick={handleTrade}
-        disabled={isLoading || !address || token.isCompleted}
+        disabled={
+          isLoading || !address || tokenCompleted || (mode === "sell" && Number.parseFloat(contractBalance) === 0)
+        }
         className={`w-full font-semibold py-6 text-lg disabled:opacity-50 ${
           mode === "buy"
             ? "bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -339,11 +491,13 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
       <p className="text-xs text-muted-foreground mt-4 text-center">
         {!address
           ? "Connect wallet to trade"
-          : token.isCompleted
-            ? "Token launch completed - trading disabled"
+          : tokenCompleted
+            ? "Token launch completed - trading on bonding curve disabled"
             : mode === "buy"
               ? "Price increases as you buy"
-              : "Price decreases as you sell"}
+              : Number.parseFloat(contractBalance) === 0
+                ? "Contract has 0 TRUST - cannot sell"
+                : "Price decreases as you sell"}
       </p>
     </Card>
   )

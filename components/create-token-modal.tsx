@@ -11,6 +11,7 @@ import Image from "next/image"
 import { useContract } from "@/hooks/use-contract"
 import { useWallet } from "@/hooks/use-wallet"
 import { checkLinkExists, createTokenInDatabase, validateIntuitionLink, normalizeIntuitionLink } from "@/lib/tokens"
+import { setCreatorTransferFee } from "@/lib/contract-functions"
 import type { MemeToken } from "@/lib/tokens"
 
 interface CreateTokenModalProps {
@@ -33,13 +34,19 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
     maxSupply: "1000000000",
     image: "/meme-token.jpg",
     intuitionLink: "",
+    creatorTransferFee: "",
+    enableTransferFee: false,
   })
 
   const supplyOptions = [{ value: "1000000000", label: "1 Billion", startPrice: 0.000000001 }]
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const { name, value, type, checked } = e.target
+    if (type === "checkbox") {
+      setFormData((prev) => ({ ...prev, [name]: checked }))
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }))
+    }
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,6 +84,14 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
     if (!formData.name || !formData.symbol) {
       setError("Please fill in all required fields")
       return
+    }
+
+    if (formData.enableTransferFee) {
+      const fee = Number.parseFloat(formData.creatorTransferFee)
+      if (isNaN(fee) || fee < 0 || fee > 5) {
+        setError("Creator transfer fee must be between 0% and 5%")
+        return
+      }
     }
 
     const linkValidationError = validateIntuitionLinkField()
@@ -117,6 +132,15 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
 
       if (!tokenAddress) {
         throw new Error("Failed to create token on blockchain")
+      }
+
+      if (formData.enableTransferFee && formData.creatorTransferFee) {
+        const fee = Number.parseFloat(formData.creatorTransferFee)
+        if (fee > 0) {
+          console.log("[v0] Setting creator transfer fee...")
+          await setCreatorTransferFee(tokenAddress, fee)
+          console.log("[v0] Creator transfer fee set to:", fee, "%")
+        }
       }
 
       const normalizedLink = formData.intuitionLink ? normalizeIntuitionLink(formData.intuitionLink) : ""
@@ -169,9 +193,8 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Step Indicator */}
           <div className="flex gap-2">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
                 className={`flex-1 h-2 rounded-full transition-colors ${s <= step ? "bg-primary" : "bg-muted/30"}`}
@@ -263,6 +286,53 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
 
           {step === 3 && (
             <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Creator Transfer Fee (Optional)</h3>
+              <p className="text-sm text-muted-foreground">
+                Set a transfer fee that you'll earn when your token is traded on DEX after migration. This is optional
+                and can be set to 0-5%.
+              </p>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  name="enableTransferFee"
+                  id="enableTransferFee"
+                  checked={formData.enableTransferFee}
+                  onChange={handleInputChange}
+                  className="w-4 h-4 rounded border-border"
+                />
+                <label htmlFor="enableTransferFee" className="text-sm text-foreground">
+                  Enable Creator Transfer Fee
+                </label>
+              </div>
+
+              {formData.enableTransferFee && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Transfer Fee Percent (Max 5%)</label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      name="creatorTransferFee"
+                      type="number"
+                      placeholder="e.g., 2.5"
+                      value={formData.creatorTransferFee}
+                      onChange={handleInputChange}
+                      className="bg-input border-border text-foreground"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                    />
+                    <span className="text-muted-foreground">%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    This fee will be applied to all transfers after DEX migration. You'll receive a portion of this fee.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">Intuition Graph Link</h3>
 
               <div>
@@ -292,19 +362,24 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
                   <p>
                     Max Supply: <span className="text-foreground font-semibold">1 Billion</span>
                   </p>
+                  {formData.enableTransferFee && formData.creatorTransferFee && (
+                    <p>
+                      Creator Transfer Fee:{" "}
+                      <span className="text-foreground font-semibold">{formData.creatorTransferFee}%</span>
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Navigation Buttons */}
           <div className="flex gap-3 pt-4">
             {step > 1 && (
               <Button onClick={() => setStep(step - 1)} variant="outline" className="flex-1" disabled={isLoading}>
                 Back
               </Button>
             )}
-            {step < 3 ? (
+            {step < 4 ? (
               <Button
                 onClick={() => setStep(step + 1)}
                 className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"

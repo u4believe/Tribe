@@ -22,11 +22,16 @@ export function useContract() {
     }
   }
 
-  const buyTokens = async (tokenAddress: string, trustAmount: string, minTokensOut?: string) => {
+  const buyTokens = async (
+    tokenAddress: string,
+    trustAmount: string,
+    minTokensOut?: string,
+    factoryContractAddress?: string,
+  ) => {
     setIsLoading(true)
     setError(null)
     try {
-      const receipt = await contractFunctions.buyTokens(tokenAddress, trustAmount, minTokensOut)
+      const receipt = await contractFunctions.buyTokens(tokenAddress, trustAmount, minTokensOut, factoryContractAddress)
       return receipt
     } catch (err: any) {
       const errorMsg = err.message || "Failed to buy tokens"
@@ -37,11 +42,11 @@ export function useContract() {
     }
   }
 
-  const sellTokens = async (tokenAddress: string, tokenAmount: string) => {
+  const sellTokens = async (tokenAddress: string, tokenAmount: string, factoryContractAddress?: string) => {
     setIsLoading(true)
     setError(null)
     try {
-      const receipt = await contractFunctions.sellTokens(tokenAddress, tokenAmount)
+      const receipt = await contractFunctions.sellTokens(tokenAddress, tokenAmount, factoryContractAddress)
       return receipt
     } catch (err: any) {
       const errorMsg = err.message || "Failed to sell tokens"
