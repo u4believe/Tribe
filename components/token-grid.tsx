@@ -7,23 +7,30 @@ interface TokenGridProps {
   onSelectToken: (token: (typeof mockTokens)[0]) => void
   onTradeComplete?: () => void
   onStarToggle?: () => void
+  onTokenHover?: (token: (typeof mockTokens)[0] | null) => void
 }
 
-export default function TokenGrid({ tokens, onSelectToken, onTradeComplete, onStarToggle }: TokenGridProps) {
+export default function TokenGrid({
+  tokens,
+  onSelectToken,
+  onTradeComplete,
+  onStarToggle,
+  onTokenHover,
+}: TokenGridProps) {
   const tribeOrientedTokens = tokens.filter((t) => t.intuitionLink && t.intuitionLink.trim() !== "")
   const allTokens = tokens.filter((t) => !t.intuitionLink || t.intuitionLink.trim() === "")
 
   return (
-    <div className="space-y-6 md:space-y-12">
+    <div className="space-y-8 md:space-y-10">
       {tribeOrientedTokens.length > 0 && (
         <section>
-          <div className="mb-3 md:mb-6">
-            <h2 className="text-xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">🚀 Tribe-Oriented</h2>
-            <p className="text-xs md:text-base text-muted-foreground">Tokens with Intuition knowledge graph</p>
+          <div className="mb-3 md:mb-4">
+            <h2 className="text-lg md:text-2xl font-bold text-foreground mb-0.5">Tribe-Oriented</h2>
+            <p className="text-[10px] md:text-sm text-muted-foreground">Tokens with Intuition knowledge graph</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {tribeOrientedTokens.map((token) => (
-              <div key={token.id} className="alpha-glow rounded-xl">
+              <div key={token.id} className="alpha-glow rounded-xl" onMouseEnter={() => onTokenHover?.(token)}>
                 <TokenCard
                   token={token}
                   onClick={() => onSelectToken(token)}
@@ -39,19 +46,21 @@ export default function TokenGrid({ tokens, onSelectToken, onTradeComplete, onSt
 
       {allTokens.length > 0 && (
         <section>
-          <div className="mb-3 md:mb-6">
-            <h2 className="text-xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">All Tokens</h2>
-            <p className="text-xs md:text-base text-muted-foreground">Discover new meme tokens</p>
+          <div className="mb-3 md:mb-4">
+            <h2 className="text-lg md:text-2xl font-bold text-foreground mb-0.5">All Tokens</h2>
+            <p className="text-[10px] md:text-sm text-muted-foreground">Discover new meme tokens</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {allTokens.map((token) => (
-              <TokenCard
-                key={token.id}
-                token={token}
-                onClick={() => onSelectToken(token)}
-                onTradeComplete={onTradeComplete}
-                onStarToggle={onStarToggle}
-              />
+              <div key={token.id} className="alpha-glow rounded-xl" onMouseEnter={() => onTokenHover?.(token)}>
+                <TokenCard
+                  key={token.id}
+                  token={token}
+                  onClick={() => onSelectToken(token)}
+                  onTradeComplete={onTradeComplete}
+                  onStarToggle={onStarToggle}
+                />
+              </div>
             ))}
           </div>
         </section>

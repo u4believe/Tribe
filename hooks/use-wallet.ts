@@ -97,6 +97,10 @@ export function useWallet() {
     setError(null)
 
     try {
+      if (typeof window === "undefined" || !window.ethereum) {
+        throw new Error("MetaMask or Web3 wallet not found. Please install MetaMask.")
+      }
+
       // Use the new forceNewWalletConnection that shows account picker
       const addr = await forceNewWalletConnection()
 
@@ -110,9 +114,9 @@ export function useWallet() {
     } catch (err: any) {
       const errorMessage = err.message || "Failed to connect wallet"
       setError(errorMessage)
-      console.error("Wallet connection error:", err)
+      console.error("[v0] Wallet connection error:", err)
 
-      if (errorMessage.includes("No Web3 wallet detected")) {
+      if (errorMessage.includes("No Web3 wallet detected") || errorMessage.includes("not found")) {
         alert("Please install MetaMask or another Web3 wallet to connect.")
       } else if (errorMessage.includes("cancelled by user")) {
         // User cancelled, no need to alert

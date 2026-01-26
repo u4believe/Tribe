@@ -122,7 +122,7 @@ export async function connectWallet() {
       try {
         await switchNetwork()
       } catch (networkError: any) {
-        console.error("Network switch error:", networkError)
+        console.error("[v0] Network switch error:", networkError)
         if (networkError.code === 4001) {
           throw new Error("Network switch cancelled by user")
         }
@@ -140,7 +140,7 @@ export async function connectWallet() {
         signer = null
         return accounts[0]
       } catch (accountError: any) {
-        console.error("Account request error:", accountError)
+        console.error("[v0] Account request error:", accountError)
         if (accountError.code === 4001) {
           throw new Error("Connection cancelled by user")
         }
@@ -152,13 +152,17 @@ export async function connectWallet() {
         throw new Error(`Failed to connect wallet: ${accountError.message || "Unknown error"}`)
       }
     } catch (error: any) {
-      console.error("Failed to connect wallet:", error)
+      console.error("[v0] Failed to connect wallet:", error)
       throw error
     } finally {
       isConnecting = false
       connectionPromise = null
     }
   })()
+
+  connectionPromise.catch((err) => {
+    console.error("[v0] Unhandled wallet connection error:", err)
+  })
 
   return connectionPromise
 }

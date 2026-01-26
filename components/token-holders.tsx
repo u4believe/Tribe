@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Users } from "lucide-react"
-import { getTokenHolders, getTokenHolderBalance } from "@/lib/contract-functions"
+import { getTokenHolderBalance } from "@/lib/contract-functions"
+import { createBrowserClient } from "@/lib/supabase/client"
 
 interface HolderInfo {
   address: string
@@ -24,22 +25,43 @@ export default function TokenHolders({ tokenAddress, maxSupply }: TokenHoldersPr
     const loadHolders = async () => {
       try {
         setIsLoading(true)
-        const holderAddresses = await getTokenHolders(tokenAddress)
+
+        const supabase = createBrowserClient()
+        const { data: trades, error } = await supabase
+          .from("token_trades")
+          .select("trader_address")
+          .eq("token_address", tokenAddress.toLowerCase())
+          .eq("trade_type", "buy")
+
+        if (error) {
+          console.error("Failed to fetch trades:", error)
+          setHolders([])
+          return
+        }
+
+        // Get unique trader addresses
+        const uniqueAddresses = [...new Set(trades?.map((t) => t.trader_address) || [])]
 
         // Fetch balance for each holder
-        const holderInfoPromises = holderAddresses.map(async (address) => {
-          const balance = await getTokenHolderBalance(tokenAddress, address)
-          const balanceNum = Number.parseFloat(balance)
-          const percentage = (balanceNum / maxSupply) * 100
+        const holderInfoPromises = uniqueAddresses.map(async (address) => {
+          try {
+            const balance = await getTokenHolderBalance(tokenAddress, address)
+            const balanceNum = Number.parseFloat(balance)
+            if (balanceNum <= 0) return null
 
-          return {
-            address,
-            balance,
-            percentage,
+            const percentage = (balanceNum / maxSupply) * 100
+
+            return {
+              address,
+              balance,
+              percentage,
+            }
+          } catch {
+            return null
           }
         })
 
-        const holderInfo = await Promise.all(holderInfoPromises)
+        const holderInfo = (await Promise.all(holderInfoPromises)).filter((h): h is HolderInfo => h !== null)
 
         // Sort by balance descending
         holderInfo.sort((a, b) => Number.parseFloat(b.balance) - Number.parseFloat(a.balance))

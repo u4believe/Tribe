@@ -130,14 +130,14 @@ export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
     <>
       <div className="fixed top-0 left-0 md:left-16 right-0 z-50">
         {showDisclaimer && (
-          <div className="bg-yellow-500/90 text-black px-2 md:px-4 py-1.5 md:py-2 flex items-center justify-center gap-2 md:gap-3 relative">
+          <div className="absolute top-0 left-0 right-0 bg-yellow-500/90 text-black px-2 md:px-4 py-1 flex items-center justify-center gap-2 md:gap-3 z-[60]">
             <AlertTriangleIcon />
-            <p className="text-xs md:text-sm font-medium text-center">
+            <p className="text-[10px] md:text-xs font-medium text-center">
               Disclaimer: This app runs on non-audited smart contracts.
             </p>
             <button
               onClick={() => setShowDisclaimer(false)}
-              className="absolute right-2 md:right-4 p-1 hover:bg-yellow-600/50 rounded transition-colors"
+              className="absolute right-2 md:right-4 p-0.5 hover:bg-yellow-600/50 rounded transition-colors"
               aria-label="Dismiss disclaimer"
             >
               <XIcon />
@@ -145,16 +145,16 @@ export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
           </div>
         )}
 
-        <header className="h-[80px] md:h-[120px] border-b border-border bg-black">
+        <header className="h-[50px] md:h-[70px] border-b border-border bg-black">
           <div className="h-full flex items-center justify-between px-2 md:px-4">
-            <div className="flex items-center gap-2 md:gap-6">
-              <div className="relative w-24 md:w-48 h-10 md:h-16 cursor-pointer" onClick={() => router.push("/")}>
+            <div className="flex items-center gap-2 md:gap-4">
+              <div className="relative w-20 md:w-36 h-8 md:h-12 cursor-pointer" onClick={() => router.push("/")}>
                 <Image src="/tribe-logo.png" alt="TRIBE Logo" fill className="object-contain" priority />
               </div>
-              <div className="hidden lg:block h-10 w-px bg-border" />
+              <div className="hidden lg:block h-8 w-px bg-border" />
               <Button
                 onClick={onCreateClick}
-                className="flex items-center gap-1 md:gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold px-2 md:px-6 text-xs md:text-sm h-8 md:h-10"
+                className="flex items-center gap-1 md:gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold px-2 md:px-4 text-[10px] md:text-xs h-7 md:h-8"
               >
                 <PlusIcon />
                 <span className="hidden sm:inline">Create Token</span>
@@ -162,13 +162,13 @@ export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
               </Button>
             </div>
 
-            <div className="flex items-center gap-2 md:gap-4">
+            <div className="flex items-center gap-2 md:gap-3">
               {address && <HeaderProfile />}
 
               {address && hasAlphaAccess && (
                 <Button
                   onClick={onAlphaClick}
-                  className="hidden md:flex bg-gradient-to-r from-primary to-primary/70 hover:from-primary/90 hover:to-primary/60 text-primary-foreground font-semibold relative overflow-hidden group"
+                  className="hidden md:flex bg-gradient-to-r from-primary to-primary/70 hover:from-primary/90 hover:to-primary/60 text-primary-foreground font-semibold text-xs h-8 relative overflow-hidden group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
                   <SparklesIcon />
@@ -180,7 +180,7 @@ export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
                 <Button
                   onClick={handleConnect}
                   disabled={isConnecting}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-2 md:px-6 text-xs md:text-sm h-8 md:h-10"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-2 md:px-4 text-[10px] md:text-xs h-7 md:h-8"
                 >
                   <WalletIcon />
                   <span className="ml-1 md:ml-2">
@@ -194,7 +194,7 @@ export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
                     variant="outline"
                     size="icon"
                     onClick={() => setShowMenu(!showMenu)}
-                    className="border-border hover:bg-muted/50 h-8 w-8 md:h-10 md:w-10"
+                    className="border-border hover:bg-muted/50 h-7 w-7 md:h-8 md:w-8"
                   >
                     <MenuIcon />
                   </Button>

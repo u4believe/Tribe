@@ -7,13 +7,26 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatLargeNumber(num: number): string {
   if (num >= 1_000_000_000) {
-    return `${(num / 1_000_000_000).toFixed(num % 1_000_000_000 === 0 ? 0 : 1)}B`
+    const billions = num / 1_000_000_000
+    // If it's a clean billion (like 1B), show without decimal
+    if (billions === Math.floor(billions)) {
+      return `${Math.floor(billions)}B`
+    }
+    return `${billions.toFixed(1)}B`
   }
   if (num >= 1_000_000) {
-    return `${(num / 1_000_000).toFixed(num % 1_000_000 === 0 ? 0 : 1)}M`
+    const millions = num / 1_000_000
+    if (millions === Math.floor(millions)) {
+      return `${Math.floor(millions)}M`
+    }
+    return `${millions.toFixed(1)}M`
   }
   if (num >= 1_000) {
-    return `${(num / 1_000).toFixed(num % 1_000 === 0 ? 0 : 1)}K`
+    const thousands = num / 1_000
+    if (thousands === Math.floor(thousands)) {
+      return `${Math.floor(thousands)}K`
+    }
+    return `${thousands.toFixed(1)}K`
   }
   return num.toString()
 }

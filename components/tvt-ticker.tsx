@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { getTotalTVT, getTokenTVT } from "@/lib/contract-functions"
+import { getTotalTVT, getTokenTVT, getAllTokenAddresses } from "@/lib/contract-functions"
 import { Contract, JsonRpcProvider } from "ethers"
 import { CONTRACT_CONFIG } from "@/lib/contract-config"
 import ABI from "@/lib/contract-abi.json"
@@ -46,7 +46,7 @@ export default function TVTTicker() {
       }
 
       try {
-        const tokenAddresses: string[] = await contract.getAllTokens()
+        const tokenAddresses = await getAllTokenAddresses()
 
         if (tokenAddresses && tokenAddresses.length > 0) {
           const tokenDataPromises = tokenAddresses.map(async (address: string) => {
