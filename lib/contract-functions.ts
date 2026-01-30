@@ -26,23 +26,59 @@ function formatAddress(address: string): string {
 
 export async function createToken(name: string, symbol: string, metadata: string) {
   try {
+    console.log("[v0] createToken - Starting token creation...")
+    console.log("[v0] createToken - Parameters:", { name, symbol, metadata })
+
     const contract = await getContract()
+    console.log("[v0] createToken - Contract obtained, calling createToken...")
+
     const tx = await contract.createToken(name, symbol, metadata)
+    console.log("[v0] createToken - Transaction sent:", tx.hash)
+
     const receipt = await tx.wait()
+    console.log("[v0] createToken - Transaction receipt received:", receipt?.hash)
+    console.log("[v0] createToken - Receipt status:", receipt?.status)
+    console.log("[v0] createToken - Logs count:", receipt?.logs?.length || 0)
 
-    const event = receipt?.logs
-      .map((log: any) => {
-        try {
-          return contract.interface.parseLog(log)
-        } catch {
-          return null
+    if (!receipt) {
+      throw new Error("Transaction receipt is null")
+    }
+
+    if (!receipt.logs || receipt.logs.length === 0) {
+      throw new Error("No logs found in transaction receipt")
+    }
+
+    let tokenAddress: string | undefined
+    
+    // Try to find TokenCreated event in logs
+    for (let i = 0; i < receipt.logs.length; i++) {
+      try {
+        const log = receipt.logs[i]
+        const parsed = contract.interface.parseLog(log)
+        console.log("[v0] createToken - Parsed log event:", parsed?.name)
+        
+        if (parsed?.name === "TokenCreated") {
+          console.log("[v0] createToken - TokenCreated event found!")
+          console.log("[v0] createToken - Event args:", parsed.args)
+          tokenAddress = parsed.args?.tokenAddress || parsed.args?.[2]
+          console.log("[v0] createToken - Token address extracted:", tokenAddress)
+          break
         }
-      })
-      .find((e: any) => e?.name === "TokenCreated")
+      } catch (logError) {
+        // Log parsing might fail for other contract's events, continue
+        console.log("[v0] createToken - Could not parse log", i, logError)
+        continue
+      }
+    }
 
-    return event?.args?.tokenAddress
+    if (!tokenAddress) {
+      throw new Error("TokenCreated event not found in transaction logs or tokenAddress is undefined")
+    }
+
+    console.log("[v0] createToken - Success! Token created at:", tokenAddress)
+    return tokenAddress
   } catch (error) {
-    console.error("Failed to create token:", error)
+    console.error("[v0] createToken - Error:", error)
     throw error
   }
 }
