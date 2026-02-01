@@ -624,6 +624,11 @@
         "name": "minPaymentOut",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "payoutTo",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [
@@ -1038,6 +1043,31 @@
   },
   {
     "type": "event",
+    "name": "LPLocked",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "lpTokenAddress",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "lpAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "TokenCommented",
     "inputs": [
       {
@@ -1125,6 +1155,12 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
+      },
+      {
+        "name": "creatorAllocation",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1171,7 +1207,7 @@
         "internalType": "address"
       },
       {
-        "name": "ethAmount",
+        "name": "paymentAmount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1208,19 +1244,69 @@
         "internalType": "address"
       },
       {
-        "name": "ethAmount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
         "name": "tokenAmount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
       },
       {
-        "name": "newPrice",
+        "name": "paymentAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "TransferFeeCollected",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "from",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "feeAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "creatorShare",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "launchpadShare",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "TransferFeeEnabled",
+    "inputs": [
+      {
+        "name": "tokenAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "transferFeePercent",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1240,7 +1326,47 @@
   },
   {
     "type": "error",
+    "name": "FeeExceedsMaximum",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientBalance",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientBondingCurveLiquidity",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InsufficientCirculatingSupply",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientContractBalance",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientTokenBalance",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidInput",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidToken",
     "inputs": []
   },
   {
@@ -1250,7 +1376,12 @@
   },
   {
     "type": "error",
-    "name": "MustSendETH",
+    "name": "MustSendPayment",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NoTokensPurchased",
     "inputs": []
   },
   {
@@ -1260,7 +1391,22 @@
   },
   {
     "type": "error",
+    "name": "NotOwner",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ReentrantCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "SlippageTooHigh",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SlippageTooHighSell",
     "inputs": []
   },
   {
@@ -1271,6 +1417,11 @@
   {
     "type": "error",
     "name": "TokenLocked",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TransferFailed",
     "inputs": []
   }
 ]
