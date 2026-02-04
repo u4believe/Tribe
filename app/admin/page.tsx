@@ -3,16 +3,18 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { deleteAllTokens } from "@/lib/tokens"
-import { Trash2, ShieldX, Download, RefreshCw } from "lucide-react"
+import { Trash2, ShieldX, Download, RefreshCw, Settings } from "lucide-react"
 import { useWallet } from "@/hooks/use-wallet"
 import { isAdmin } from "@/lib/admin-config"
 import { importTokensFromContract } from "@/lib/contract-import"
 import {
-  handleAuditToken,
-  handleCheckMigration,
-  handleCollectFees,
-  handleValidateRouter,
+  setTokenBuySpread,
+  setTokenSellSpread,
+  emergencyWithdraw,
+  setDexRouter,
+  getTokenInfo,
 } from "@/lib/contract-functions"
 
 export default function AdminPage() {
@@ -22,6 +24,13 @@ export default function AdminPage() {
   const [message, setMessage] = useState("")
   const { address } = useWallet()
   const userIsAdmin = isAdmin(address)
+
+  // Form states for admin functions
+  const [tokenAddress, setTokenAddress] = useState("")
+  const [spreadPercent, setSpreadPercent] = useState("")
+  const [routerAddress, setRouterAddress] = useState("")
+  const [adminMessage, setAdminMessage] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   if (!address) {
     return (
@@ -64,6 +73,92 @@ export default function AdminPage() {
         </div>
       </div>
     )
+  }
+
+  const handleSetBuySpread = async () => {
+    if (!tokenAddress || !spreadPercent) {
+      setAdminMessage("❌ Please enter token address and spread percent")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await setTokenBuySpread(tokenAddress, Number.parseInt(spreadPercent))
+      setAdminMessage("✅ Buy spread set successfully!")
+      setTokenAddress("")
+      setSpreadPercent("")
+    } catch (error) {
+      setAdminMessage(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSetSellSpread = async () => {
+    if (!tokenAddress || !spreadPercent) {
+      setAdminMessage("❌ Please enter token address and spread percent")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await setTokenSellSpread(tokenAddress, Number.parseInt(spreadPercent))
+      setAdminMessage("✅ Sell spread set successfully!")
+      setTokenAddress("")
+      setSpreadPercent("")
+    } catch (error) {
+      setAdminMessage(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleEmergencyWithdraw = async () => {
+    if (!tokenAddress) {
+      setAdminMessage("❌ Please enter token address")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await emergencyWithdraw(tokenAddress)
+      setAdminMessage("✅ Emergency withdrawal successful!")
+      setTokenAddress("")
+    } catch (error) {
+      setAdminMessage(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSetDexRouter = async () => {
+    if (!routerAddress) {
+      setAdminMessage("❌ Please enter router address")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await setDexRouter(routerAddress)
+      setAdminMessage("✅ DEX router set successfully!")
+      setRouterAddress("")
+    } catch (error) {
+      setAdminMessage(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGetTokenInfo = async () => {
+    if (!tokenAddress) {
+      setAdminMessage("❌ Please enter token address")
+      return
+    }
+    setIsLoading(true)
+    try {
+      const info = await getTokenInfo(tokenAddress)
+      setAdminMessage(`✅ Token Info: Created by ${info.creator}, Completed: ${info.completed}`)
+    } catch (error) {
+      setAdminMessage(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleImportTokens = async () => {
@@ -181,54 +276,157 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
+        <Card className="mb-6 border-purple-200">
+          <CardHeader>
+            <CardTitle className="text-purple-600 flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Admin Settings
+            </CardTitle>
+            <CardDescription>Configure contract parameters</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <h3 className="font-semibold mb-2">Set Token Buy Spread</h3>
+              <div className="flex gap-2 mb-3">
+                <Input
+                  type="text"
+                  placeholder="Token address"
+                  value={tokenAddress}
+                  onChange={(e) => setTokenAddress(e.target.value)}
+                  className="flex-1 text-sm"
+                />
+                <Input
+                  type="number"
+                  placeholder="Spread %"
+                  value={spreadPercent}
+                  onChange={(e) => setSpreadPercent(e.target.value)}
+                  className="w-24 text-sm"
+                />
+                <Button
+                  onClick={handleSetBuySpread}
+                  disabled={isLoading}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Set
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <h3 className="font-semibold mb-2">Set Token Sell Spread</h3>
+              <div className="flex gap-2 mb-3">
+                <Input
+                  type="text"
+                  placeholder="Token address"
+                  value={tokenAddress}
+                  onChange={(e) => setTokenAddress(e.target.value)}
+                  className="flex-1 text-sm"
+                />
+                <Input
+                  type="number"
+                  placeholder="Spread %"
+                  value={spreadPercent}
+                  onChange={(e) => setSpreadPercent(e.target.value)}
+                  className="w-24 text-sm"
+                />
+                <Button
+                  onClick={handleSetSellSpread}
+                  disabled={isLoading}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Set
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <h3 className="font-semibold mb-2">Emergency Withdrawal</h3>
+              <div className="flex gap-2 mb-3">
+                <Input
+                  type="text"
+                  placeholder="Token address"
+                  value={tokenAddress}
+                  onChange={(e) => setTokenAddress(e.target.value)}
+                  className="flex-1 text-sm"
+                />
+                <Button
+                  onClick={handleEmergencyWithdraw}
+                  disabled={isLoading}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Withdraw
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <h3 className="font-semibold mb-2">Set DEX Router</h3>
+              <div className="flex gap-2 mb-3">
+                <Input
+                  type="text"
+                  placeholder="Router address"
+                  value={routerAddress}
+                  onChange={(e) => setRouterAddress(e.target.value)}
+                  className="flex-1 text-sm"
+                />
+                <Button
+                  onClick={handleSetDexRouter}
+                  disabled={isLoading}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Set
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <h3 className="font-semibold mb-2">Get Token Info</h3>
+              <div className="flex gap-2 mb-3">
+                <Input
+                  type="text"
+                  placeholder="Token address"
+                  value={tokenAddress}
+                  onChange={(e) => setTokenAddress(e.target.value)}
+                  className="flex-1 text-sm"
+                />
+                <Button
+                  onClick={handleGetTokenInfo}
+                  disabled={isLoading}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Info
+                </Button>
+              </div>
+            </div>
+
+            {adminMessage && (
+              <div
+                className={`p-4 rounded-lg ${
+                  adminMessage.includes("✅")
+                    ? "bg-green-50 text-green-800"
+                    : adminMessage.includes("❌")
+                      ? "bg-red-50 text-red-800"
+                      : "bg-blue-50 text-blue-800"
+                }`}
+              >
+                {adminMessage}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="mb-6 border-green-200">
           <CardHeader>
             <CardTitle className="text-green-600 flex items-center gap-2">
               <RefreshCw className="h-5 w-5" />
-              Contract Functions
+              Legacy Contract Functions
             </CardTitle>
-            <CardDescription>Admin functions for managing the contract</CardDescription>
+            <CardDescription>Deprecated admin functions from previous contract version</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h3 className="font-semibold mb-2">Audit Trust Accounting</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Verify contract TRUST accounting for a token to ensure liquidity calculations are correct.
-              </p>
-              <Button onClick={handleAuditToken} className="bg-green-600 hover:bg-green-700">
-                Audit Token
-              </Button>
-            </div>
-
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h3 className="font-semibold mb-2">Check Migration Readiness</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Check if a token is ready for migration to DEX based on bonding curve completion.
-              </p>
-              <Button onClick={handleCheckMigration} className="bg-green-600 hover:bg-green-700">
-                Check Migration
-              </Button>
-            </div>
-
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h3 className="font-semibold mb-2">Collect and Split Transfer Fees</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Collect accumulated transfer fees for a token and split them between treasury and bonding curve.
-              </p>
-              <Button onClick={handleCollectFees} className="bg-green-600 hover:bg-green-700">
-                Collect Fees
-              </Button>
-            </div>
-
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h3 className="font-semibold mb-2">Validate Router</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Validate that the DEX router for a token is properly configured and authorized.
-              </p>
-              <Button onClick={handleValidateRouter} className="bg-green-600 hover:bg-green-700">
-                Validate Router
-              </Button>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              These functions were available in the previous contract and are no longer used. Please use the Admin Settings above instead.
+            </p>
           </CardContent>
         </Card>
 

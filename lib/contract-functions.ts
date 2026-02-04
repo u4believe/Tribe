@@ -290,28 +290,19 @@ export async function sellTokens(tokenAddress: string, tokenAmount: string, fact
 
 export async function getTokenInfo(tokenAddress: string) {
   try {
-    const contract = await getContract()
-    const info = await contract.getTokenInfo(tokenAddress)
-
-    if (!info || !info.currentSupply || info.currentSupply === null || info.currentSupply === 0n) {
-      console.log("[v0] Token info returned null or zero values")
-      return null
-    }
-
-    return {
-      name: info.name,
-      symbol: info.symbol,
-      metadata: info.metadata,
-      creator: info.creator,
-      heldTokens: formatEther(info.heldTokens || 0),
-      maxSupply: formatEther(info.maxSupply || 0),
-      currentSupply: formatEther(info.currentSupply || 0),
-      completed: info.completed || false,
-      creationTime: Number(info.creationTime || 0),
-    }
+    tokenAddress = formatAddress(tokenAddress)
+    
+    const provider = await getJsonProvider()
+    const contract = new Contract(CONTRACT_CONFIG.address, ABI, provider)
+    
+    console.log("[v0] getTokenInfo - Fetching info for:", tokenAddress)
+    const tokenInfo = await contract.getTokenInfo(tokenAddress)
+    
+    console.log("[v0] getTokenInfo - Retrieved:", tokenInfo)
+    return tokenInfo
   } catch (error) {
-    console.error("[v0] Failed to get token info:", error)
-    return null
+    console.error("Failed to get token info:", error)
+    throw error
   }
 }
 
@@ -362,6 +353,18 @@ export async function getCurrentPrice(tokenAddress: string) {
   }
 }
 
+export async function getTokenTVT(tokenAddress: string): Promise<string> {
+  try {
+    const provider = await getJsonProvider()
+    const contract = new Contract(CONTRACT_CONFIG.address, ABI, provider)
+    const tvt = await contract.tokenTotalValueTraded(tokenAddress)
+    return formatEther(tvt)
+  } catch (error) {
+    console.error("Failed to get token TVT:", error)
+    return "0"
+  }
+}
+
 export async function getTotalTVT(): Promise<string> {
   try {
     const { fetchAllTokens } = await import("./tokens")
@@ -385,16 +388,71 @@ export async function getTotalTVT(): Promise<string> {
   }
 }
 
-export async function getTokenTVT(tokenAddress: string): Promise<string> {
+export async function setTokenBuySpread(tokenAddress: string, spreadPercent: number) {
   try {
-    const jsonProvider = await getJsonProvider()
-    const readOnlyContract = new Contract(CONTRACT_CONFIG.address, ABI, jsonProvider)
-    // Use tokenTotalValueTraded mapping instead of getTokenTVT function
-    const tvt = await readOnlyContract.tokenTotalValueTraded(tokenAddress)
-    return formatEther(tvt)
+    tokenAddress = formatAddress(tokenAddress)
+    console.log("[v0] setTokenBuySpread - Setting buy spread:", { tokenAddress, spreadPercent })
+
+    const contract = await getContract()
+    const tx = await contract.setTokenBuySpread(tokenAddress, spreadPercent)
+    const receipt = await tx.wait()
+
+    console.log("[v0] setTokenBuySpread - Success!")
+    return receipt
   } catch (error) {
-    console.error("Failed to get token TVT:", error)
-    return "0"
+    console.error("Failed to set token buy spread:", error)
+    throw error
+  }
+}
+
+export async function setTokenSellSpread(tokenAddress: string, spreadPercent: number) {
+  try {
+    tokenAddress = formatAddress(tokenAddress)
+    console.log("[v0] setTokenSellSpread - Setting sell spread:", { tokenAddress, spreadPercent })
+
+    const contract = await getContract()
+    const tx = await contract.setTokenSellSpread(tokenAddress, spreadPercent)
+    const receipt = await tx.wait()
+
+    console.log("[v0] setTokenSellSpread - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to set token sell spread:", error)
+    throw error
+  }
+}
+
+export async function emergencyWithdraw(tokenAddress: string) {
+  try {
+    tokenAddress = formatAddress(tokenAddress)
+    console.log("[v0] emergencyWithdraw - Initiating emergency withdrawal:", { tokenAddress })
+
+    const contract = await getContract()
+    const tx = await contract.emergencyWithdraw(tokenAddress)
+    const receipt = await tx.wait()
+
+    console.log("[v0] emergencyWithdraw - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to perform emergency withdrawal:", error)
+    throw error
+  }
+}
+
+export async function setDexRouter(routerAddress: string) {
+  try {
+    routerAddress = formatAddress(routerAddress)
+    console.log("[v0] setDexRouter - Setting DEX router:", { routerAddress })
+
+    const contract = await getContract()
+    const tx = await contract.setDexRouter(routerAddress)
+    const receipt = await tx.wait()
+
+    console.log("[v0] setDexRouter - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to set DEX router:", error)
+    throw error
   }
 }
 
@@ -487,9 +545,7 @@ export async function isTokenUnlocked(tokenAddress: string): Promise<boolean> {
   }
 }
 
-export async function getUserVolume(
-  userAddress: string,
-): Promise<{ buyVolume: string; sellVolume: string; totalVolume: string }> {
+export async function getUserVolume(userAddress: string): Promise<{ buyVolume: string; sellVolume: string; totalVolume: string }> {
   try {
     console.log(`[v0] getUserVolume START for: ${userAddress}`)
 
@@ -516,6 +572,17 @@ export async function getUserVolume(
   }
 }
 
+export async function getAllTokenAddresses(): Promise<string[]> {
+  try {
+    const { fetchAllTokens } = await import("./tokens")
+    const tokens = await fetchAllTokens()
+    return tokens.map((token) => token.contractAddress)
+  } catch (error) {
+    console.error("Failed to get all token addresses:", error)
+    return []
+  }
+}
+
 export async function getCurveLiquidity(tokenAddress: string): Promise<string> {
   try {
     const jsonProvider = await getJsonProvider()
@@ -525,18 +592,5 @@ export async function getCurveLiquidity(tokenAddress: string): Promise<string> {
   } catch (error) {
     console.error("Failed to get curve liquidity:", error)
     return "0"
-  }
-}
-
-export async function getAllTokenAddresses(): Promise<string[]> {
-  try {
-    const { fetchAllTokens } = await import("./tokens")
-    const tokens = await fetchAllTokens()
-    return tokens
-      .map((token) => token.contractAddress)
-      .filter((addr) => addr && addr !== "0x0000000000000000000000000000000000000000")
-  } catch (error) {
-    console.error("Failed to get all token addresses:", error)
-    return []
   }
 }
