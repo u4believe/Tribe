@@ -27,41 +27,33 @@ export default function TokenHolders({ tokenAddress, maxSupply }: TokenHoldersPr
         setIsLoading(true)
 
         const supabase = createBrowserClient()
-        const { data: trades, error } = await supabase
-          .from("token_trades")
-          .select("trader_address")
+        const { data: holdersData, error } = await supabase
+          .from("token_holders")
+          .select("holder_address, balance")
           .eq("token_address", tokenAddress.toLowerCase())
-          .eq("trade_type", "buy")
 
         if (error) {
-          console.error("Failed to fetch trades:", error)
+          console.error("Failed to fetch holders:", error)
           setHolders([])
           return
         }
 
-        // Get unique trader addresses
-        const uniqueAddresses = [...new Set(trades?.map((t) => t.trader_address) || [])]
-
-        // Fetch balance for each holder
-        const holderInfoPromises = uniqueAddresses.map(async (address) => {
-          try {
-            const balance = await getTokenHolderBalance(tokenAddress, address)
+        // Convert to HolderInfo format
+        const holderInfo = (holdersData || [])
+          .map((holder) => {
+            const balance = holder.balance ? Number(holder.balance).toString() : "0"
             const balanceNum = Number.parseFloat(balance)
             if (balanceNum <= 0) return null
 
             const percentage = (balanceNum / maxSupply) * 100
 
             return {
-              address,
+              address: holder.holder_address,
               balance,
               percentage,
             }
-          } catch {
-            return null
-          }
-        })
-
-        const holderInfo = (await Promise.all(holderInfoPromises)).filter((h): h is HolderInfo => h !== null)
+          })
+          .filter((h): h is HolderInfo => h !== null)
 
         // Sort by balance descending
         holderInfo.sort((a, b) => Number.parseFloat(b.balance) - Number.parseFloat(a.balance))
