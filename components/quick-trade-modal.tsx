@@ -1,14 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { X, Loader2 } from "lucide-react"
+import { X, Loader2, Lock } from "lucide-react"
 import { useContract } from "@/hooks/use-contract"
 import { useWallet } from "@/hooks/use-wallet"
 import { updateTokenInDatabase } from "@/lib/tokens"
-import { getTokenInfoWithRetry, getCurrentPrice } from "@/lib/contract-functions"
+import { getTokenInfoWithRetry, getCurrentPrice, isTokenUnlocked } from "@/lib/contract-functions"
 import type { mockTokens } from "@/lib/mock-data"
 
 interface QuickTradeModalProps {
@@ -31,6 +31,28 @@ export default function QuickTradeModal({
   const [error, setError] = useState("")
   const { buyTokens, sellTokens } = useContract()
   const { address } = useWallet()
+  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [isCheckingLock, setIsCheckingLock] = useState(true)
+
+  useEffect(() => {
+    const checkUnlockStatus = async () => {
+      if (token.contractAddress && token.contractAddress !== "0x0000000000000000000000000000000000000000") {
+        try {
+          setIsCheckingLock(true)
+          const unlocked = await isTokenUnlocked(token.contractAddress)
+          setIsUnlocked(unlocked)
+        } catch (error) {
+          console.error("Failed to check unlock status:", error)
+          setIsUnlocked(false)
+        } finally {
+          setIsCheckingLock(false)
+        }
+      } else {
+        setIsCheckingLock(false)
+      }
+    }
+    checkUnlockStatus()
+  }, [token.contractAddress])
 
   const handleAmountChange = (value: string) => {
     setAmount(value)
@@ -144,6 +166,27 @@ export default function QuickTradeModal({
         </div>
 
         <div className="p-6 space-y-4">
+          {isCheckingLock && (
+            <div className="p-3 bg-muted/30 border border-border rounded-lg flex items-center gap-2">
+              <Loader2 className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
+              <p className="text-sm text-muted-foreground">Checking token status...</p>
+            </div>
+          )}
+
+          {!isCheckingLock && !isUnlocked && !token.isCompleted && (
+            <div className="p-4 bg-orange-500/20 border-2 border-orange-500 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Lock className="w-6 h-6 text-orange-500 flex-shrink-0" />
+                <div>
+                  <p className="text-base text-orange-500 font-bold">Token Locked</p>
+                  <p className="text-sm text-orange-400 mt-1">
+                    Creator must buy 2% (20M tokens) to unlock trading for other users
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {token.isCompleted && (
             <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
               <p className="text-sm text-orange-600 font-medium text-center">
@@ -158,15 +201,15 @@ export default function QuickTradeModal({
               onClick={() => setMode("buy")}
               variant={mode === "buy" ? "default" : "ghost"}
               className={mode === "buy" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}
-              disabled={isLoading || token.isCompleted}
+              disabled={isLoading || token.isCompleted || isCheckingLock || !isUnlocked}
             >
               Buy
             </Button>
             <Button
               onClick={() => setMode("sell")}
               variant={mode === "sell" ? "default" : "ghost"}
-              className={mode === "sell" ? "bg-destructive text-destructive-foreground" : "text-muted-foreground"}
-              disabled={isLoading || token.isCompleted}
+              className={mode === "sell" ? "bg-yellow-500 hover:bg-yellow-600 text-black" : "text-muted-foreground"}
+              disabled={isLoading || token.isCompleted || isCheckingLock || !isUnlocked}
             >
               Sell
             </Button>
@@ -186,7 +229,7 @@ export default function QuickTradeModal({
                 value={amount}
                 onChange={(e) => handleAmountChange(e.target.value)}
                 className="bg-input border-border text-foreground"
-                disabled={isLoading || token.isCompleted}
+                disabled={isLoading || token.isCompleted || isCheckingLock || !isUnlocked}
               />
             </div>
 
@@ -198,7 +241,7 @@ export default function QuickTradeModal({
                 value={trustAmount}
                 onChange={(e) => handleTrustChange(e.target.value)}
                 className="bg-input border-border text-foreground"
-                disabled={isLoading || token.isCompleted}
+                disabled={isLoading || token.isCompleted || isCheckingLock || !isUnlocked}
               />
             </div>
           </div>
@@ -218,11 +261,11 @@ export default function QuickTradeModal({
           {/* Action Button */}
           <Button
             onClick={handleTrade}
-            disabled={isLoading || !address || token.isCompleted}
+            disabled={isLoading || !address || token.isCompleted || isCheckingLock || !isUnlocked}
             className={`w-full font-semibold py-5 disabled:opacity-50 ${
               mode === "buy"
                 ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                : "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                : "bg-yellow-500 hover:bg-yellow-600 text-black"
             }`}
           >
             {isLoading ? (

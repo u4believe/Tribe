@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useWallet } from "@/hooks/use-wallet"
 import { MessageSquare, Send } from "lucide-react"
-import { addTokenComment, getTokenComments } from "@/lib/contract-functions"
 import { awardCommentPoints } from "@/lib/points-system"
+import { createBrowserClient } from "@supabase/ssr"
 
 interface Comment {
   commenter: string
@@ -29,10 +29,33 @@ export default function TokenComments({ tokenAddress }: TokenCommentsProps) {
   const loadComments = async () => {
     try {
       setIsLoading(true)
-      const fetchedComments = await getTokenComments(tokenAddress)
-      setComments([...fetchedComments].reverse())
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      )
+
+      const { data, error } = await supabase
+        .from("token_comments")
+        .select("*")
+        .eq("token_address", tokenAddress.toLowerCase())
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("Failed to load comments from Supabase:", error)
+        setComments([])
+        return
+      }
+
+      const formattedComments: Comment[] = (data || []).map((c: any) => ({
+        commenter: c.commenter_address || c.commenter,
+        text: c.comment_text || c.text,
+        timestamp: new Date(c.created_at).getTime() / 1000,
+      }))
+
+      setComments(formattedComments)
     } catch (error) {
       console.error("Failed to load comments:", error)
+      setComments([])
     } finally {
       setIsLoading(false)
     }
@@ -47,7 +70,23 @@ export default function TokenComments({ tokenAddress }: TokenCommentsProps) {
 
     try {
       setIsSubmitting(true)
-      await addTokenComment(tokenAddress, newComment.trim())
+
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      )
+
+      const { error } = await supabase.from("token_comments").insert({
+        token_address: tokenAddress.toLowerCase(),
+        commenter_address: address,
+        comment_text: newComment.trim(),
+        created_at: new Date().toISOString(),
+      })
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
       await awardCommentPoints(address)
       setNewComment("")
       // Reload comments after submission

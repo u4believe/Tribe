@@ -4,7 +4,7 @@ import { createBrowserClient } from "@/lib/supabase/client"
 
 export async function toggleStarToken(userAddress: string, tokenAddress: string): Promise<boolean> {
   console.log("[v0] toggleStarToken called:", { userAddress, tokenAddress })
-  
+
   const supabase = createBrowserClient()
   if (!supabase) {
     console.error("[v0] Supabase client not available")
@@ -63,34 +63,57 @@ export async function toggleStarToken(userAddress: string, tokenAddress: string)
 }
 
 export async function getStarredTokens(userAddress: string): Promise<string[]> {
-  const supabase = createBrowserClient()
-  if (!supabase) return []
+  // Return empty array if no user address provided
+  if (!userAddress) {
+    return []
+  }
 
   try {
+    const supabase = createBrowserClient()
+    if (!supabase) {
+      console.log("[v0] Supabase client not available for getStarredTokens")
+      return []
+    }
+
     const { data, error } = await supabase
       .from("starred_tokens")
       .select("token_address")
       .eq("user_address", userAddress.toLowerCase())
 
-    if (error) throw error
+    if (error) {
+      // Don't throw, just log and return empty array
+      console.log("[v0] Error fetching starred tokens (non-critical):", error.message)
+      return []
+    }
+
     return data?.map((item) => item.token_address) || []
   } catch (error) {
-    console.error("Error fetching starred tokens:", error)
+    // Catch any network errors and return empty array
+    console.log("[v0] Network error fetching starred tokens (non-critical):", error)
     return []
   }
 }
 
 export async function isTokenStarred(userAddress: string, tokenAddress: string): Promise<boolean> {
-  const supabase = createBrowserClient()
-  if (!supabase) return false
+  // Return false if missing parameters
+  if (!userAddress || !tokenAddress) {
+    return false
+  }
 
   try {
-    const { data } = await supabase
+    const supabase = createBrowserClient()
+    if (!supabase) return false
+
+    const { data, error } = await supabase
       .from("starred_tokens")
       .select("id")
       .eq("user_address", userAddress.toLowerCase())
       .eq("token_address", tokenAddress.toLowerCase())
       .single()
+
+    if (error) {
+      return false
+    }
 
     return !!data
   } catch (error) {

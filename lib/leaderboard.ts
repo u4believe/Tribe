@@ -1,5 +1,5 @@
 import { createBrowserClient } from "./supabase/client"
-import { getUserVolume, getAllTokens, getTokenHolders } from "./contract-functions"
+import { getUserVolume } from "./contract-functions"
 
 export interface LeaderboardTrader {
   address: string
@@ -23,33 +23,21 @@ export async function getTopTraders(limit = 25): Promise<LeaderboardTrader[]> {
   try {
     console.log("[v0] Getting top traders from blockchain...")
 
-    // Get all token addresses from the contract
-    const tokenAddresses = await getAllTokens()
-    console.log(`[v0] Found ${tokenAddresses.length} tokens on blockchain`)
+    const supabase = createBrowserClient()
 
-    if (tokenAddresses.length === 0) {
-      console.log("[v0] No tokens found")
+    // Get all unique addresses from token_trades table
+    const { data: trades, error } = await supabase.from("token_trades").select("trader_address").limit(1000)
+
+    if (error) {
+      console.error("[v0] Error fetching trades:", error)
       return []
     }
 
-    // Get all unique addresses that have interacted with any token
-    const allAddresses = new Set<string>()
-
-    for (const tokenAddress of tokenAddresses) {
-      try {
-        const holders = await getTokenHolders(tokenAddress)
-        console.log(`[v0] Token ${tokenAddress} has ${holders.length} holders`)
-        holders.forEach((holder) => allAddresses.add(holder.toLowerCase()))
-      } catch (error) {
-        console.error(`[v0] Error fetching holders for token ${tokenAddress}:`, error)
-      }
-    }
-
-    const uniqueAddresses = Array.from(allAddresses)
-    console.log(`[v0] Found ${uniqueAddresses.length} unique addresses across all tokens`)
+    const uniqueAddresses = [...new Set(trades?.map((t) => t.trader_address.toLowerCase()) || [])]
+    console.log(`[v0] Found ${uniqueAddresses.length} unique addresses from trades`)
 
     if (uniqueAddresses.length === 0) {
-      console.log("[v0] No holders found")
+      console.log("[v0] No traders found")
       return []
     }
 

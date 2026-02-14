@@ -1,20 +1,21 @@
-import { BrowserProvider, Contract, parseEther, formatEther, JsonRpcProvider, Interface } from "ethers"
-import contractAbiJson from "./contract-abi.json"
-import tokenAbiJson from "./token-abi.json"
-import { CONTRACT_ADDRESS, RPC_URL, CONTRACT_CONFIG } from "./contract-config"
+import { getContract, getJsonProvider } from "./web3-provider"
+import { parseEther, formatEther, Contract, toBigInt } from "ethers"
+import { CONTRACT_CONFIG } from "./contract-config"
+import ABI from "./contract-abi.json"
 
-const ERC20_ABI = tokenAbiJson
-const CONTRACT_ABI = contractAbiJson
-
-async function getContract(contractAddress: string = CONTRACT_ADDRESS) {
-  if (typeof window === "undefined" || !window.ethereum) {
-    throw new Error("No wallet detected")
-  }
-
-  const provider = new BrowserProvider(window.ethereum)
-  const signer = await provider.getSigner()
-  return new Contract(contractAddress, CONTRACT_ABI, signer)
+async function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
+
+const ERC20_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)",
+  "function name() view returns (string)",
+]
 
 function formatAddress(address: string): string {
   if (address.startsWith("0x") && address.length === 42) {
@@ -23,218 +24,285 @@ function formatAddress(address: string): string {
   throw new Error(`Invalid address format: ${address}`)
 }
 
-async function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-function getJsonProvider() {
-  return new JsonRpcProvider(RPC_URL, {
-    chainId: CONTRACT_CONFIG.chainId,
-    name: CONTRACT_CONFIG.chainName,
-  })
-}
-
-function getReadOnlyContract(contractAddress: string = CONTRACT_ADDRESS) {
-  const provider = getJsonProvider()
-  return new Contract(contractAddress, CONTRACT_ABI, provider)
-}
-
 export async function createToken(name: string, symbol: string, metadata: string) {
   try {
+    console.log("[v0] createToken - Starting token creation...")
+    console.log("[v0] createToken - Parameters:", { name, symbol, metadata })
+
     const contract = await getContract()
+    console.log("[v0] createToken - Contract obtained, calling createToken...")
+
     const tx = await contract.createToken(name, symbol, metadata)
-    const receipt = await tx.wait()
-
-    const event = receipt?.logs
-      .map((log: any) => {
-        try {
-          return contract.interface.parseLog(log)
-        } catch {
-          return null
-        }
-      })
-      .find((e: any) => e?.name === "TokenCreated")
-
-    return event?.args?.tokenAddress
-  } catch (error) {
-    console.error("Failed to create token:", error)
-    throw error
-  }
-}
-
-export async function buyTokens(
-  tokenAddress: string,
-  trustAmount: string,
-  minTokensOut: string,
-  factoryContractAddress?: string,
-) {
-  try {
-    const contractAddress = factoryContractAddress || CONTRACT_ADDRESS
-    const contract = await getContract(contractAddress)
-
-    const tx = await contract.buyTokens(tokenAddress, parseEther(minTokensOut), {
-      value: parseEther(trustAmount),
-    })
+    console.log("[v0] createToken - Transaction sent:", tx.hash)
 
     const receipt = await tx.wait()
-    return receipt
-  } catch (error) {
-    console.error("Failed to buy tokens:", error)
-    throw error
-  }
-}
+    console.log("[v0] createToken - Transaction receipt received:", receipt?.hash)
+    console.log("[v0] createToken - Receipt status:", receipt?.status)
+    console.log("[v0] createToken - Logs count:", receipt?.logs?.length || 0)
 
-export async function sellTokens(tokenAddress: string, tokenAmount: string, factoryContractAddress?: string) {
-  try {
-    const contractAddress = factoryContractAddress || CONTRACT_ADDRESS
-    console.log("[v0] 🔍 Selling via contract:", contractAddress)
-    console.log("[v0] 🔍 Token address:", tokenAddress)
-    console.log("[v0] 🔍 Amount to sell:", tokenAmount)
-
-    const provider = getJsonProvider()
-    const contractBalance = await provider.getBalance(contractAddress)
-    const contractBalanceFormatted = formatEther(contractBalance)
-    console.log("[v0] 💰 Contract address being checked:", contractAddress)
-    console.log("[v0] 💰 Contract TRUST balance (raw):", contractBalance.toString())
-    console.log("[v0] 💰 Contract TRUST balance (formatted):", contractBalanceFormatted, "TRUST")
-
-    const contract = await getContract(contractAddress)
-    const signer = await contract.runner
-
-    const currentPrice = await getCurrentPrice(tokenAddress, contractAddress)
-    if (!currentPrice) {
-      throw new Error("Cannot get current token price")
+    if (!receipt) {
+      throw new Error("Transaction receipt is null")
     }
 
-    const amountToSell = parseEther(tokenAmount)
-    const expectedTrust = Number.parseFloat(tokenAmount) * Number.parseFloat(currentPrice)
-    const expectedTrustAfterFees = expectedTrust * 0.97 // 3% fee
-
-    console.log("[v0] 📊 Current token price:", currentPrice, "TRUST per token")
-    console.log("[v0] 📊 Expected TRUST from sell (before fees):", expectedTrust.toFixed(6), "TRUST")
-    console.log("[v0] 📊 Expected TRUST after 3% fee:", expectedTrustAfterFees.toFixed(6), "TRUST")
-
-    if (Number.parseFloat(contractBalanceFormatted) === 0) {
-      throw new Error(
-        `❌ CRITICAL: The contract at ${contractAddress} has 0 TRUST balance. Cannot complete sell order. The contract needs buyers to fund sellers. Please check if this is the correct contract address or wait for buyers.`,
-      )
+    if (!receipt.logs || receipt.logs.length === 0) {
+      throw new Error("No logs found in transaction receipt")
     }
 
-    if (Number.parseFloat(contractBalanceFormatted) < expectedTrustAfterFees) {
-      console.warn("[v0] ⚠️ WARNING: Contract has insufficient TRUST for full payout!")
-      console.warn(
-        `[v0] Available: ${contractBalanceFormatted} TRUST, Expected: ${expectedTrustAfterFees.toFixed(6)} TRUST`,
-      )
-      console.warn(`[v0] You may receive less TRUST than expected (possibly only ${contractBalanceFormatted} TRUST)`)
-    }
-
-    const tokenContract = new Contract(tokenAddress, ERC20_ABI, signer)
-
-    const currentAllowance = await tokenContract.allowance(signer?.address, contract.target)
-
-    if (currentAllowance < amountToSell) {
-      console.log("[v0] 🔓 Approving tokens...")
-      const approveTx = await tokenContract.approve(contract.target, amountToSell)
-      await approveTx.wait()
-      console.log("[v0] ✅ Approval successful")
-    }
-
-    const balanceBefore = await signer.provider!.getBalance(signer.address)
-    console.log("[v0] 💵 User balance before sell:", formatEther(balanceBefore), "TRUST")
-
-    console.log("[v0] 📤 Calling sellTokens on contract...")
-    const tx = await contract.sellTokens(tokenAddress, amountToSell)
-    console.log("[v0] 📝 Sell tx hash:", tx.hash)
-    console.log("[v0] ⏳ Waiting for confirmation...")
-
-    const receipt = await tx.wait()
-    console.log("[v0] ✅ Transaction confirmed! Status:", receipt.status)
-    console.log("[v0] ⛽ Gas used:", receipt.gasUsed.toString())
-
-    await delay(3000)
-
-    const balanceAfter = await signer.provider!.getBalance(signer.address)
-    const gasCost = receipt.gasUsed * receipt.gasPrice
-    const balanceChange = balanceAfter - balanceBefore
-
-    console.log("[v0] 💵 User balance after sell:", formatEther(balanceAfter), "TRUST")
-    console.log("[v0] ⛽ Gas cost:", formatEther(gasCost), "TRUST")
-    console.log("[v0] 📊 Balance change:", formatEther(balanceChange), "TRUST")
-    console.log("[v0] 💰 Net TRUST received:", formatEther(balanceChange + gasCost), "TRUST")
-
-    const iface = new Interface(CONTRACT_ABI)
-    let eventTrustAmount = 0n
-    let eventFound = false
-
-    for (const log of receipt.logs) {
+    let tokenAddress: string | undefined
+    
+    // Try to find TokenCreated event in logs
+    for (let i = 0; i < receipt.logs.length; i++) {
       try {
-        const parsed = iface.parseLog({ topics: log.topics, data: log.data })
-        if (parsed?.name === "TokensSold") {
-          eventFound = true
-          eventTrustAmount = parsed.args[2] || parsed.args.ethAmount || 0n
-          console.log("[v0] 🎯 TokensSold event found!")
-          console.log("[v0] 🎯 Event args:", parsed.args.toString())
-          console.log("[v0] 🎯 ethAmount (index 2):", eventTrustAmount.toString())
-          console.log("[v0] ✅ TRUST from event:", formatEther(eventTrustAmount), "TRUST")
+        const log = receipt.logs[i]
+        const parsed = contract.interface.parseLog(log)
+        console.log("[v0] createToken - Parsed log event:", parsed?.name)
+        
+        if (parsed?.name === "TokenCreated") {
+          console.log("[v0] createToken - TokenCreated event found!")
+          console.log("[v0] createToken - Event args:", parsed.args)
+          tokenAddress = parsed.args?.tokenAddress || parsed.args?.[2]
+          console.log("[v0] createToken - Token address extracted:", tokenAddress)
           break
         }
-      } catch (e) {
-        // Skip non-matching logs
+      } catch (logError) {
+        // Log parsing might fail for other contract's events, continue
+        console.log("[v0] createToken - Could not parse log", i, logError)
+        continue
       }
     }
 
-    if (!eventFound) {
-      console.error("[v0] ❌ TokensSold event not found in transaction receipt!")
+    if (!tokenAddress) {
+      throw new Error("TokenCreated event not found in transaction logs or tokenAddress is undefined")
     }
 
-    if (eventTrustAmount === 0n) {
-      const actualReceived = formatEther(balanceChange + gasCost)
-      console.error("[v0] ❌ CRITICAL: TokensSold event shows 0 TRUST sent from contract!")
-      console.error("[v0] 📊 Contract balance was:", contractBalanceFormatted, "TRUST")
-      console.error("[v0] 📊 User actually received:", actualReceived, "TRUST (excluding gas)")
+    console.log("[v0] createToken - Success! Token created at:", tokenAddress)
+    return tokenAddress
+  } catch (error) {
+    console.error("[v0] createToken - Error:", error)
+    throw error
+  }
+}
 
+export async function buyTokens(tokenAddress: string, trustAmount: string, minTokensOut = "0") {
+  try {
+    tokenAddress = formatAddress(tokenAddress)
+
+    const trustAmountNum = Number.parseFloat(trustAmount)
+    if (isNaN(trustAmountNum) || trustAmountNum <= 0) {
+      throw new Error(`Invalid TRUST amount: ${trustAmount}`)
+    }
+
+    const contract = await getContract()
+    console.log("[v0] buyTokens - Validating token exists...")
+
+    const tokenInfo = await contract.getTokenInfo(tokenAddress)
+    if (!tokenInfo || !tokenInfo.creator || tokenInfo.creator === "0x0000000000000000000000000000000000000000") {
+      throw new Error("Token does not exist or has not been created yet")
+    }
+
+    if (tokenInfo.completed) {
+      throw new Error("Token launch has been completed. Trading is disabled.")
+    }
+
+    console.log("[v0] buyTokens - Token validated, preparing transaction...")
+    console.log("[v0] buyTokens - Parameters:", {
+      tokenAddress,
+      trustAmount: `${trustAmount} TRUST`,
+      trustAmountWei: parseEther(trustAmount).toString(),
+      minTokensOut,
+    })
+
+    let minTokensOutWei
+    if (!minTokensOut || minTokensOut === "0" || Number.parseFloat(minTokensOut) === 0) {
+      minTokensOutWei = toBigInt(0)
+      console.log("[v0] buyTokens - No minimum tokens requirement (slippage protection disabled)")
+    } else {
+      minTokensOutWei = parseEther(minTokensOut)
+      console.log("[v0] buyTokens - Minimum tokens out:", minTokensOut, "tokens")
+    }
+
+    try {
+      console.log("[v0] buyTokens - Estimating gas...")
+      const gasEstimate = await contract.buyTokens.estimateGas(tokenAddress, minTokensOutWei, {
+        value: parseEther(trustAmount),
+      })
+      console.log("[v0] buyTokens - Gas estimate:", gasEstimate.toString())
+    } catch (gasError: any) {
+      console.error("[v0] buyTokens - Gas estimation failed:", gasError)
+
+      const errorMessage = gasError.message || gasError.toString()
+
+      if (errorMessage.includes("SlippageTooHigh")) {
+        throw new Error(
+          "Price changed too much during transaction. Try increasing slippage tolerance or reducing trade amount.",
+        )
+      } else if (errorMessage.includes("TokenLaunchCompleted")) {
+        throw new Error("Token launch has been completed. Trading is no longer available through the bonding curve.")
+      } else if (errorMessage.includes("CreatorBuyLimitExceeded")) {
+        throw new Error("Creator has reached the maximum buy limit for this token.")
+      } else if (errorMessage.includes("ExceedsMaxSupply")) {
+        throw new Error("This purchase would exceed the maximum token supply. Try buying a smaller amount.")
+      } else if (errorMessage.includes("MustSendETH") || errorMessage.includes("NoTokensToBuy")) {
+        throw new Error("Invalid purchase amount. Please enter a valid TRUST amount.")
+      } else if (errorMessage.includes("insufficient funds") || errorMessage.includes("sender doesn't have enough")) {
+        throw new Error("Insufficient TRUST balance. You need more TRUST tokens to complete this purchase.")
+      } else if (errorMessage.includes("execution reverted")) {
+        throw new Error(
+          "Transaction would fail. Please check: you have enough TRUST, token exists, and launch is not completed.",
+        )
+      } else if (errorMessage.includes("missing revert data")) {
+        throw new Error(
+          "Unable to complete transaction. Possible reasons: insufficient TRUST balance, slippage too high, or token launch completed. Please check your wallet balance and try again.",
+        )
+      }
+
+      throw new Error(`Transaction validation failed: ${errorMessage}`)
+    }
+
+    const tx = await contract.buyTokens(tokenAddress, minTokensOutWei, {
+      value: parseEther(trustAmount),
+    })
+    console.log("[v0] buyTokens - Transaction sent:", tx.hash)
+
+    const receipt = await tx.wait()
+    console.log("[v0] buyTokens - Transaction confirmed:", receipt?.transactionHash)
+    return receipt
+  } catch (error: any) {
+    console.error("[v0] Failed to buy tokens:", error)
+
+    if (error.message?.includes("user rejected")) {
+      throw new Error("Transaction rejected by user")
+    } else if (error.message?.includes("insufficient funds")) {
+      throw new Error("Insufficient TRUST balance in your wallet")
+    } else if (error.message?.includes("execution reverted")) {
+      throw new Error("Transaction failed. Please check: token exists, launch not completed, and you have enough TRUST")
+    }
+
+    throw error
+  }
+}
+
+export async function sellTokens(tokenAddress: string, tokenAmount: string, factoryAddress?: string, payoutTo?: string) {
+  try {
+    const contractAddress = CONTRACT_CONFIG.address
+    console.log("[v0] Selling tokens:", {
+      tokenAddress,
+      tokenAmount,
+      contractAddress,
+      payoutTo,
+      note: "Using hardcoded contract address",
+    })
+
+    const { BrowserProvider, Contract, parseEther, formatEther } = await import("ethers")
+
+    if (typeof window === "undefined" || !window.ethereum) {
+      throw new Error("No wallet connected")
+    }
+
+    const provider = new BrowserProvider(window.ethereum)
+    const signer = await provider.getSigner()
+    const userAddress = await signer.getAddress()
+
+    const contract = new Contract(contractAddress, ABI, signer)
+
+    const userBalanceBefore = await provider.getBalance(userAddress)
+    console.log("[v0] User TRUST balance before sell:", formatEther(userBalanceBefore), "TRUST")
+
+    const tokenContract = new Contract(tokenAddress, ERC20_ABI, signer)
+
+    const userTokenBalance = await tokenContract.balanceOf(userAddress)
+    console.log("[v0] User token balance:", formatEther(userTokenBalance), "tokens")
+
+    const amountToSell = parseEther(tokenAmount)
+    if (userTokenBalance < amountToSell) {
       throw new Error(
-        `Sell completed but the TokensSold event shows 0 TRUST was sent. This means the contract at ${contractAddress} has insufficient TRUST balance (${contractBalanceFormatted} TRUST available). The contract needs buyers to send TRUST before it can pay sellers. Please verify the contract address is correct: ${contractAddress}`,
+        `Insufficient token balance. You have ${formatEther(userTokenBalance)} tokens but trying to sell ${tokenAmount}`,
       )
     }
 
-    console.log("[v0] ✅ Sell completed successfully!")
-    console.log("[v0] 💰 You received:", formatEther(eventTrustAmount), "TRUST")
+    const currentAllowance = await tokenContract.allowance(userAddress, contractAddress)
+    console.log("[v0] Current allowance:", formatEther(currentAllowance))
 
-    return receipt
-  } catch (error) {
-    console.error("[v0] ❌ Sell error:", error)
+    if (currentAllowance < amountToSell) {
+      console.log("[v0] Approving token contract for selling...")
+      const approveTx = await tokenContract.approve(contractAddress, amountToSell)
+      await approveTx.wait()
+      console.log("[v0] Approval successful")
+    }
+
+    // Determine payout address - use provided payoutTo or default to user address
+    const payoutAddress = payoutTo && payoutTo !== userAddress ? payoutTo : userAddress
+    console.log("[v0] Payout address:", payoutAddress)
+
+    // Using 0 for minPaymentOut to allow any slippage
+    const minPaymentOut = toBigInt(0)
+    console.log("[v0] Executing sell transaction with minPaymentOut:", minPaymentOut.toString())
+    const tx = await contract.sellTokens(tokenAddress, amountToSell, minPaymentOut, payoutAddress)
+    console.log("[v0] Sell transaction sent:", tx.hash)
+
+    const receipt = await tx.wait()
+    console.log("[v0] Sell transaction confirmed:", receipt?.hash)
+    console.log("[v0] Transaction status:", receipt?.status)
+
+    let ethReceived = 0n
+    if (receipt?.logs) {
+      for (const log of receipt.logs) {
+        try {
+          const parsed = contract.interface.parseLog({
+            topics: log.topics as string[],
+            data: log.data,
+          })
+          if (parsed?.name === "TokensSold") {
+            console.log("[v0] TokensSold event found!")
+            ethReceived = parsed.args[2]
+            console.log("[v0] TRUST received from event:", formatEther(ethReceived), "TRUST")
+          }
+        } catch {
+          // Not our event, skip
+        }
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    const userBalanceAfter = await provider.getBalance(userAddress)
+    console.log("[v0] User TRUST balance after sell:", formatEther(userBalanceAfter), "TRUST")
+
+    const balanceDiff = userBalanceAfter - userBalanceBefore
+    console.log("[v0] Balance difference:", formatEther(balanceDiff), "TRUST")
+
+    return receipt?.hash
+  } catch (error: any) {
+    console.error("[v0] Sell error:", error)
+
+    const errorMessage = error.message || ""
+    if (errorMessage.includes("TokenLocked")) {
+      throw new Error("Token is locked. The creator needs to buy more tokens to unlock selling.")
+    } else if (errorMessage.includes("InsufficientBalance")) {
+      throw new Error("Insufficient token balance.")
+    } else if (errorMessage.includes("user rejected")) {
+      throw new Error("Transaction rejected by user.")
+    }
+
     throw error
   }
 }
 
 export async function getTokenInfo(tokenAddress: string) {
   try {
-    const contract = await getContract()
-    const info = await contract.getTokenInfo(tokenAddress)
-
-    if (!info || !info.currentSupply || info.currentSupply === null || info.currentSupply === 0n) {
-      console.log("[v0] Token info returned null or zero values")
-      return null
-    }
-
-    return {
-      name: info.name,
-      symbol: info.symbol,
-      metadata: info.metadata,
-      creator: info.creator,
-      creatorAllocation: formatEther(info.creatorAllocation || 0),
-      heldTokens: formatEther(info.heldTokens || 0),
-      maxSupply: formatEther(info.maxSupply || 0),
-      currentSupply: formatEther(info.currentSupply || 0),
-      virtualTrust: formatEther(info.virtualTrust || 0),
-      virtualTokens: formatEther(info.virtualTokens || 0),
-      completed: info.completed || false,
-      creationTime: Number(info.creationTime || 0),
-    }
+    tokenAddress = formatAddress(tokenAddress)
+    
+    const provider = await getJsonProvider()
+    const contract = new Contract(CONTRACT_CONFIG.address, ABI, provider)
+    
+    console.log("[v0] getTokenInfo - Fetching info for:", tokenAddress)
+    const tokenInfo = await contract.getTokenInfo(tokenAddress)
+    
+    console.log("[v0] getTokenInfo - Retrieved:", tokenInfo)
+    return tokenInfo
   } catch (error) {
-    console.error("[v0] Failed to get token info:", error)
-    return null
+    console.error("Failed to get token info:", error)
+    throw error
   }
 }
 
@@ -268,27 +336,122 @@ export async function getTokenInfoWithRetry(
   return null
 }
 
-export async function getCurrentPrice(tokenAddress: string, factoryContractAddress?: string): Promise<string | null> {
+export async function getCurrentPrice(tokenAddress: string) {
   try {
-    const contractAddress = factoryContractAddress || CONTRACT_ADDRESS
-    const readOnlyContract = getReadOnlyContract(contractAddress)
-    const price = await readOnlyContract.getCurrentPrice(tokenAddress)
-    return formatEther(price)
-  } catch (error: any) {
-    if (error?.reason === "Invalid") {
+    const contract = await getContract()
+    const price = await contract.getCurrentPrice(tokenAddress)
+
+    if (!price || price === null) {
+      console.log("[v0] Price not yet available")
       return null
     }
+
+    return formatEther(price)
+  } catch (error) {
     console.error("[v0] Failed to get current price:", error)
     return null
   }
 }
 
-export async function getAllTokens() {
+export async function getTokenTVT(tokenAddress: string): Promise<string> {
   try {
-    const contract = await getContract()
-    return await contract.getAllTokens()
+    const provider = await getJsonProvider()
+    const contract = new Contract(CONTRACT_CONFIG.address, ABI, provider)
+    const tvt = await contract.tokenTotalValueTraded(tokenAddress)
+    return formatEther(tvt)
   } catch (error) {
-    console.error("Failed to get all tokens:", error)
+    console.error("Failed to get token TVT:", error)
+    return "0"
+  }
+}
+
+export async function getTotalTVT(): Promise<string> {
+  try {
+    const { fetchAllTokens } = await import("./tokens")
+
+    const tokens = await fetchAllTokens()
+    let totalTVT = 0
+
+    for (const token of tokens) {
+      try {
+        const tvt = await getTokenTVT(token.contractAddress)
+        totalTVT += Number.parseFloat(tvt)
+      } catch (error) {
+        console.log(`[v0] Failed to get TVT for token ${token.contractAddress}, skipping...`)
+      }
+    }
+
+    return totalTVT.toString()
+  } catch (error) {
+    console.error("Failed to get total TVT:", error)
+    return "0"
+  }
+}
+
+export async function setTokenBuySpread(tokenAddress: string, spreadPercent: number) {
+  try {
+    tokenAddress = formatAddress(tokenAddress)
+    console.log("[v0] setTokenBuySpread - Setting buy spread:", { tokenAddress, spreadPercent })
+
+    const contract = await getContract()
+    const tx = await contract.setTokenBuySpread(tokenAddress, spreadPercent)
+    const receipt = await tx.wait()
+
+    console.log("[v0] setTokenBuySpread - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to set token buy spread:", error)
+    throw error
+  }
+}
+
+export async function setTokenSellSpread(tokenAddress: string, spreadPercent: number) {
+  try {
+    tokenAddress = formatAddress(tokenAddress)
+    console.log("[v0] setTokenSellSpread - Setting sell spread:", { tokenAddress, spreadPercent })
+
+    const contract = await getContract()
+    const tx = await contract.setTokenSellSpread(tokenAddress, spreadPercent)
+    const receipt = await tx.wait()
+
+    console.log("[v0] setTokenSellSpread - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to set token sell spread:", error)
+    throw error
+  }
+}
+
+export async function emergencyWithdraw(tokenAddress: string) {
+  try {
+    tokenAddress = formatAddress(tokenAddress)
+    console.log("[v0] emergencyWithdraw - Initiating emergency withdrawal:", { tokenAddress })
+
+    const contract = await getContract()
+    const tx = await contract.emergencyWithdraw(tokenAddress)
+    const receipt = await tx.wait()
+
+    console.log("[v0] emergencyWithdraw - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to perform emergency withdrawal:", error)
+    throw error
+  }
+}
+
+export async function setDexRouter(routerAddress: string) {
+  try {
+    routerAddress = formatAddress(routerAddress)
+    console.log("[v0] setDexRouter - Setting DEX router:", { routerAddress })
+
+    const contract = await getContract()
+    const tx = await contract.setDexRouter(routerAddress)
+    const receipt = await tx.wait()
+
+    console.log("[v0] setDexRouter - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to set DEX router:", error)
     throw error
   }
 }
@@ -357,49 +520,13 @@ export async function addTokenComment(tokenAddress: string, commentText: string)
   }
 }
 
-export async function getTokenComments(tokenAddress: string) {
-  try {
-    const readOnlyContract = getReadOnlyContract()
-    const comments = await readOnlyContract.getComments(tokenAddress)
-
-    return comments.map((comment: any) => ({
-      commenter: comment.commenter,
-      text: comment.text,
-      timestamp: Number(comment.timestamp),
-    }))
-  } catch (error: any) {
-    if (error?.reason === "Invalid" || error?.message?.includes("Invalid")) {
-      return []
-    }
-    console.error("Failed to get comments:", error)
-    return []
-  }
-}
-
-export async function getTokenHolders(tokenAddress: string): Promise<string[]> {
-  try {
-    const readOnlyContract = getReadOnlyContract()
-    const holders = await readOnlyContract.getTokenHolders(tokenAddress)
-    return holders
-  } catch (error: any) {
-    if (error?.reason === "Invalid" || error?.message?.includes("Invalid")) {
-      return []
-    }
-    console.error("Failed to get token holders:", error)
-    return []
-  }
-}
-
 export async function getTokenHolderBalance(tokenAddress: string, holderAddress: string): Promise<string> {
   try {
-    const provider = getJsonProvider()
-    const tokenContract = new Contract(tokenAddress, ERC20_ABI, provider)
+    const jsonProvider = await getJsonProvider()
+    const tokenContract = new Contract(tokenAddress, ERC20_ABI, jsonProvider)
     const balance = await tokenContract.balanceOf(holderAddress)
     return formatEther(balance)
-  } catch (error: any) {
-    if (error?.reason === "Invalid" || error?.message?.includes("Invalid")) {
-      return "0"
-    }
+  } catch (error) {
     console.error("Failed to get holder balance:", error)
     return "0"
   }
@@ -407,251 +534,63 @@ export async function getTokenHolderBalance(tokenAddress: string, holderAddress:
 
 export async function isTokenUnlocked(tokenAddress: string): Promise<boolean> {
   try {
-    const readOnlyContract = getReadOnlyContract()
-    const unlocked = await readOnlyContract.tokenUnlocked(tokenAddress)
-    console.log("[v0] 🔓 Token unlock status for", tokenAddress, ":", unlocked)
-    return unlocked
+    const jsonProvider = await getJsonProvider()
+
+    const readOnlyContract = new Contract(CONTRACT_CONFIG.address, ABI, jsonProvider)
+    const isUnlocked = await readOnlyContract.tokenUnlocked(tokenAddress)
+    return isUnlocked
   } catch (error) {
     console.error("Failed to check token unlock status:", error)
-    // Return true as default to not block old tokens
-    return true
-  }
-}
-
-export async function getTokenTVT(tokenAddress: string): Promise<string> {
-  try {
-    const provider = getJsonProvider()
-    const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider)
-    const tvt = await contract.getTokenTVT(tokenAddress)
-    return formatEther(tvt)
-  } catch (error) {
-    console.error("Failed to get token TVT:", error)
-    return "0"
-  }
-}
-
-export async function getTotalTVT(): Promise<string> {
-  try {
-    const provider = getJsonProvider()
-    const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider)
-    const total = await contract.getTotalTVT()
-    return formatEther(total)
-  } catch (error) {
-    console.error("Failed to get total TVT:", error)
-    return "0"
-  }
-}
-
-export async function getUserVolume(userAddress: string): Promise<{ buyVolume: string; sellVolume: string }> {
-  try {
-    const provider = getJsonProvider()
-    const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider)
-    const volumes = await contract.getUserVolume(userAddress)
-    return {
-      buyVolume: formatEther(volumes.buyVolume || volumes[0] || 0),
-      sellVolume: formatEther(volumes.sellVolume || volumes[1] || 0),
-    }
-  } catch (error) {
-    console.error("Failed to get user volume:", error)
-    return { buyVolume: "0", sellVolume: "0" }
-  }
-}
-
-export async function setCreatorTransferFee(tokenAddress: string, feePercent: number) {
-  try {
-    if (feePercent < 0 || feePercent > 5) {
-      throw new Error("Creator transfer fee must be between 0% and 5%")
-    }
-
-    const contract = await getContract()
-    const tx = await contract.setCreatorTransferFee(tokenAddress, feePercent)
-    const receipt = await tx.wait()
-    console.log("[v0] Creator transfer fee set successfully")
-    return receipt
-  } catch (error: any) {
-    console.error("Failed to set creator transfer fee:", error)
-    if (error.message?.includes("user rejected")) {
-      throw new Error("Transaction rejected by user")
-    }
-    throw error
-  }
-}
-
-export async function getCreatorTransferFeePercent(tokenAddress: string): Promise<number> {
-  try {
-    const readOnlyContract = getReadOnlyContract()
-    const feePercent = await readOnlyContract.creatorTransferFeePercent(tokenAddress)
-    return Number(feePercent)
-  } catch (error) {
-    console.error("Failed to get creator transfer fee percent:", error)
-    return 0
-  }
-}
-
-export async function transferOwnership(newOwnerAddress: string) {
-  try {
-    if (!newOwnerAddress.startsWith("0x") || newOwnerAddress.length !== 42) {
-      throw new Error("Invalid address format")
-    }
-
-    const contract = await getContract()
-    const tx = await contract.transferOwnership(newOwnerAddress)
-    const receipt = await tx.wait()
-    console.log("[v0] Ownership transferred successfully")
-    return receipt
-  } catch (error: any) {
-    console.error("Failed to transfer ownership:", error)
-    if (error.message?.includes("user rejected")) {
-      throw new Error("Transaction rejected by user")
-    }
-    throw error
-  }
-}
-
-export async function setDexRouter(newRouterAddress: string) {
-  try {
-    if (!newRouterAddress.startsWith("0x") || newRouterAddress.length !== 42) {
-      throw new Error("Invalid address format")
-    }
-
-    const contract = await getContract()
-    const tx = await contract.setDexRouter(newRouterAddress)
-    const receipt = await tx.wait()
-    console.log("[v0] DEX router updated successfully")
-    return receipt
-  } catch (error: any) {
-    console.error("Failed to set DEX router:", error)
-    if (error.message?.includes("user rejected")) {
-      throw new Error("Transaction rejected by user")
-    }
-    throw error
-  }
-}
-
-export async function setFeePercent(newFeePercent: number) {
-  try {
-    if (newFeePercent < 0 || newFeePercent > 20) {
-      throw new Error("Fee percent must be between 0% and 20%")
-    }
-
-    const contract = await getContract()
-    const tx = await contract.setFeePercent(newFeePercent)
-    const receipt = await tx.wait()
-    console.log("[v0] Fee percent updated successfully")
-    return receipt
-  } catch (error: any) {
-    console.error("Failed to set fee percent:", error)
-    if (error.message?.includes("user rejected")) {
-      throw new Error("Transaction rejected by user")
-    }
-    throw error
-  }
-}
-
-export async function setDefaultPostMigrationTransferFeePercent(newFeePercent: number) {
-  try {
-    if (newFeePercent < 0 || newFeePercent > 5) {
-      throw new Error("Post migration transfer fee must be between 0% and 5%")
-    }
-
-    const contract = await getContract()
-    const tx = await contract.setDefaultPostMigrationTransferFeePercent(newFeePercent)
-    const receipt = await tx.wait()
-    console.log("[v0] Default post migration transfer fee updated successfully")
-    return receipt
-  } catch (error: any) {
-    console.error("Failed to set default post migration transfer fee:", error)
-    if (error.message?.includes("user rejected")) {
-      throw new Error("Transaction rejected by user")
-    }
-    throw error
-  }
-}
-
-export async function completeTokenLaunch(tokenAddress: string) {
-  try {
-    if (!tokenAddress.startsWith("0x") || tokenAddress.length !== 42) {
-      throw new Error("Invalid token address format")
-    }
-
-    const contract = await getContract()
-    const tx = await contract.completeTokenLaunch(tokenAddress)
-    const receipt = await tx.wait()
-    console.log("[v0] Token launch completed (DEX migration) successfully")
-    return receipt
-  } catch (error: any) {
-    console.error("Failed to complete token launch:", error)
-    if (error.message?.includes("user rejected")) {
-      throw new Error("Transaction rejected by user")
-    }
-    throw error
-  }
-}
-
-export async function getFeePercent(): Promise<number> {
-  try {
-    const readOnlyContract = getReadOnlyContract()
-    const feePercent = await readOnlyContract.feePercent()
-    return Number(feePercent)
-  } catch (error) {
-    console.error("Failed to get fee percent:", error)
-    return 0
-  }
-}
-
-export async function getDexRouter(): Promise<string> {
-  try {
-    const readOnlyContract = getReadOnlyContract()
-    const router = await readOnlyContract.dexRouter()
-    return router
-  } catch (error) {
-    console.error("Failed to get DEX router:", error)
-    return ""
-  }
-}
-
-export async function getDefaultPostMigrationTransferFeePercent(): Promise<number> {
-  try {
-    const readOnlyContract = getReadOnlyContract()
-    const feePercent = await readOnlyContract.defaultPostMigrationTransferFeePercent()
-    return Number(feePercent)
-  } catch (error) {
-    console.error("Failed to get default post migration transfer fee:", error)
-    return 0
-  }
-}
-
-export async function getContractOwner(): Promise<string> {
-  try {
-    const readOnlyContract = getReadOnlyContract()
-    const owner = await readOnlyContract.owner()
-    return owner
-  } catch (error) {
-    console.error("Failed to get contract owner:", error)
-    return ""
-  }
-}
-
-export async function getContractTrustBalance(contractAddress: string = CONTRACT_ADDRESS): Promise<string> {
-  try {
-    console.log("[v0] 🔍 Checking TRUST balance for contract:", contractAddress)
-    const provider = getJsonProvider()
-    const balance = await provider.getBalance(contractAddress)
-    const formatted = formatEther(balance)
-    console.log("[v0] 💰 Contract balance:", formatted, "TRUST")
-    return formatted
-  } catch (error) {
-    console.error("Failed to get contract TRUST balance:", error)
-    return "0"
-  }
-}
-
-export async function isTokenCompleted(tokenAddress: string): Promise<boolean> {
-  try {
-    const info = await getTokenInfo(tokenAddress)
-    return info?.completed || false
-  } catch (error) {
-    console.error("Failed to check token completion status:", error)
     return false
+  }
+}
+
+export async function getUserVolume(userAddress: string): Promise<{ buyVolume: string; sellVolume: string; totalVolume: string }> {
+  try {
+    console.log(`[v0] getUserVolume START for: ${userAddress}`)
+
+    userAddress = formatAddress(userAddress)
+
+    const jsonProvider = await getJsonProvider()
+    const readOnlyContract = new Contract(CONTRACT_CONFIG.address, ABI, jsonProvider)
+
+    // Use userVolumes mapping instead of getUserVolume function
+    const volumes = await readOnlyContract.userVolumes(userAddress)
+
+    const buyVolume = formatEther(volumes.totalBuyVolume || 0n)
+    const sellVolume = formatEther(volumes.totalSellVolume || 0n)
+    const totalVolume = (Number.parseFloat(buyVolume) + Number.parseFloat(sellVolume)).toString()
+
+    console.log(
+      `[v0] getUserVolume SUCCESS - ${userAddress}: Buy=${buyVolume}, Sell=${sellVolume}, Total=${totalVolume}`,
+    )
+
+    return { buyVolume, sellVolume, totalVolume }
+  } catch (error) {
+    console.error(`[v0] getUserVolume FAILED for ${userAddress}:`, error)
+    return { buyVolume: "0", sellVolume: "0", totalVolume: "0" }
+  }
+}
+
+export async function getAllTokenAddresses(): Promise<string[]> {
+  try {
+    const { fetchAllTokens } = await import("./tokens")
+    const tokens = await fetchAllTokens()
+    return tokens.map((token) => token.contractAddress)
+  } catch (error) {
+    console.error("Failed to get all token addresses:", error)
+    return []
+  }
+}
+
+export async function getCurveLiquidity(tokenAddress: string): Promise<string> {
+  try {
+    const jsonProvider = await getJsonProvider()
+    const readOnlyContract = new Contract(CONTRACT_CONFIG.address, ABI, jsonProvider)
+    const liquidity = await readOnlyContract.curveLiquidity(tokenAddress)
+    return formatEther(liquidity)
+  } catch (error) {
+    console.error("Failed to get curve liquidity:", error)
+    return "0"
   }
 }

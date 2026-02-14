@@ -18,7 +18,9 @@ const SidebarContext = createContext<SidebarContextType>({
   setIsCollapsed: () => {},
 })
 
-export const useSidebar = () => useContext(SidebarContext)
+export function useSidebar() {
+  return useContext(SidebarContext)
+}
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   return (
@@ -28,7 +30,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-export default function Sidebar() {
+export function Sidebar() {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -102,3 +104,5 @@ export default function Sidebar() {
     </aside>
   )
 }
+
+export default Sidebar

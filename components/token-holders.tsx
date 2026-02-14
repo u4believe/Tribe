@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Users } from "lucide-react"
-import { getTokenHolders, getTokenHolderBalance } from "@/lib/contract-functions"
+import { getTokenHolderBalance } from "@/lib/contract-functions"
+import { createBrowserClient } from "@/lib/supabase/client"
 
 interface HolderInfo {
   address: string
@@ -24,22 +25,35 @@ export default function TokenHolders({ tokenAddress, maxSupply }: TokenHoldersPr
     const loadHolders = async () => {
       try {
         setIsLoading(true)
-        const holderAddresses = await getTokenHolders(tokenAddress)
 
-        // Fetch balance for each holder
-        const holderInfoPromises = holderAddresses.map(async (address) => {
-          const balance = await getTokenHolderBalance(tokenAddress, address)
-          const balanceNum = Number.parseFloat(balance)
-          const percentage = (balanceNum / maxSupply) * 100
+        const supabase = createBrowserClient()
+        const { data: holdersData, error } = await supabase
+          .from("token_holders")
+          .select("holder_address, balance")
+          .eq("token_address", tokenAddress.toLowerCase())
 
-          return {
-            address,
-            balance,
-            percentage,
-          }
-        })
+        if (error) {
+          console.error("Failed to fetch holders:", error)
+          setHolders([])
+          return
+        }
 
-        const holderInfo = await Promise.all(holderInfoPromises)
+        // Convert to HolderInfo format
+        const holderInfo = (holdersData || [])
+          .map((holder) => {
+            const balance = holder.balance ? Number(holder.balance).toString() : "0"
+            const balanceNum = Number.parseFloat(balance)
+            if (balanceNum <= 0) return null
+
+            const percentage = (balanceNum / maxSupply) * 100
+
+            return {
+              address: holder.holder_address,
+              balance,
+              percentage,
+            }
+          })
+          .filter((h): h is HolderInfo => h !== null)
 
         // Sort by balance descending
         holderInfo.sort((a, b) => Number.parseFloat(b.balance) - Number.parseFloat(a.balance))

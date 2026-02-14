@@ -13,9 +13,9 @@ The leaderboard system is designed to update daily with cached data for performa
 ### 1. Run the Database Migration
 
 Execute the SQL script to create the cache table:
-\`\`\`bash
+```bash
 # The script is located at: scripts/014_create_leaderboard_cache.sql
-\`\`\`
+```
 
 ### 2. Set Up Automatic Daily Refresh (Optional but Recommended)
 
@@ -23,20 +23,20 @@ For automatic daily updates, set up a cron job that calls the refresh API:
 
 **Option A: Vercel Cron Jobs**
 Add to your `vercel.json`:
-\`\`\`json
+```json
 {
   "crons": [{
     "path": "/api/leaderboard/refresh",
     "schedule": "0 0 * * *"
   }]
 }
-\`\`\`
+```
 
 **Option B: External Cron Service**
 Use a service like cron-job.org or EasyCron to call:
-\`\`\`
+```
 https://your-domain.com/api/leaderboard/refresh
-\`\`\`
+```
 Schedule: Daily at midnight (0 0 * * *)
 
 ### 3. Initial Cache Population
@@ -59,7 +59,7 @@ After setup, manually trigger the first refresh:
 Refreshes the leaderboard cache with fresh data from the blockchain and database.
 
 **Response:**
-\`\`\`json
+```json
 {
   "success": true,
   "message": "Leaderboard refreshed successfully",
@@ -69,7 +69,7 @@ Refreshes the leaderboard cache with fresh data from the blockchain and database
     "mostActive": 25
   }
 }
-\`\`\`
+```
 
 ### GET /api/leaderboard/refresh
 Same as POST - useful for cron jobs that only support GET requests.

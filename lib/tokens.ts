@@ -18,7 +18,8 @@ export interface MemeToken {
   contractAddress: string
   isCompleted: boolean
   createdAt: string
-  factoryAddress?: string // Added factory contract address field
+  factory_address?: string
+  isRewind2025?: boolean
   creatorProfile?: {
     displayName?: string
     profileImage?: string
@@ -42,7 +43,8 @@ interface SupabaseToken {
   contract_address: string
   is_completed: boolean
   created_at: string
-  factory_address?: string // Added factory contract address field
+  factory_address?: string
+  is_rewind_2025?: boolean
   user_profiles?: {
     display_name?: string
     profile_image?: string
@@ -68,7 +70,8 @@ function supabaseToToken(data: SupabaseToken): MemeToken {
     contractAddress: data.contract_address,
     isCompleted: data.is_completed,
     createdAt: data.created_at,
-    factoryAddress: data.factory_address, // Map factory address field
+    factory_address: data.factory_address,
+    isRewind2025: data.is_rewind_2025,
     creatorProfile: data.user_profiles
       ? {
           displayName: data.user_profiles.display_name,
@@ -126,7 +129,8 @@ export async function fetchAllTokens(): Promise<MemeToken[]> {
         contract_address,
         is_completed,
         created_at,
-        factory_address
+        factory_address,
+        is_rewind_2025
       `)
       .order("created_at", { ascending: false })
 
@@ -165,7 +169,6 @@ export async function fetchAllTokens(): Promise<MemeToken[]> {
       const profile = profileMap.get(token.creator)
       return supabaseToToken({
         ...token,
-        factory_address: token.factory_address,
         user_profiles: profile
           ? {
               display_name: profile.display_name,
@@ -293,7 +296,7 @@ export async function createTokenInDatabase(token: Omit<MemeToken, "id">): Promi
     const createdAt = token.createdAt || new Date().toISOString()
     console.log("[v0] Using timestamp:", createdAt)
 
-    const insertData: any = {
+    const insertData = {
       name: token.name,
       symbol: token.symbol,
       image: token.image,
@@ -309,11 +312,8 @@ export async function createTokenInDatabase(token: Omit<MemeToken, "id">): Promi
       contract_address: token.contractAddress,
       is_completed: token.isCompleted,
       created_at: createdAt,
-    }
-
-    // Only add factory_address if it's provided (for backward compatibility)
-    if (token.factoryAddress) {
-      insertData.factory_address = token.factoryAddress
+      factory_address: token.factory_address || null,
+      is_rewind_2025: token.isRewind2025 || null,
     }
 
     console.log("[v0] Inserting token data:", insertData)
@@ -354,6 +354,8 @@ export async function updateTokenInDatabase(
     marketCap?: number
     holders?: number
     isCompleted?: boolean
+    factory_address?: string
+    isRewind2025?: boolean
   },
 ): Promise<boolean> {
   try {
@@ -376,6 +378,8 @@ export async function updateTokenInDatabase(
 
     if (updates.holders !== undefined) dbUpdates.holders = Math.floor(updates.holders)
     if (updates.isCompleted !== undefined) dbUpdates.is_completed = updates.isCompleted
+    if (updates.factory_address !== undefined) dbUpdates.factory_address = updates.factory_address
+    if (updates.isRewind2025 !== undefined) dbUpdates.is_rewind_2025 = updates.isRewind2025
 
     const { error } = await supabase.from("meme_tokens").update(dbUpdates).eq("contract_address", contractAddress)
 

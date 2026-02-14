@@ -22,7 +22,7 @@ This will delete all:
 
 In `lib/contract-config.ts`:
 
-\`\`\`typescript
+```typescript
 export const CONTRACT_CONFIG = {
   address: "0xYourNewContractAddressHere",  // Replace this
   chainId: 1155,  // Update if different network
@@ -33,7 +33,7 @@ export const CONTRACT_CONFIG = {
     blockExplorer: "https://intuition.calderaexplorer.xyz/",
   },
 }
-\`\`\`
+```
 
 ## Step 3: Replace Contract ABI
 

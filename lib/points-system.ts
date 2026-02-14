@@ -1,6 +1,5 @@
 import { createBrowserClient } from "./supabase/client"
-import { getContract } from "./web3-provider"
-import { formatEther } from "ethers"
+import { getUserVolume } from "./contract-functions"
 
 // Points calculation constant (k value)
 // Adjust this to scale the points (higher k = more points)
@@ -23,6 +22,7 @@ export function calculatePoints(tradeVolume: number): number {
 
 /**
  * Fetch user's trading volume from the blockchain
+ * Use getUserVolume helper that uses userVolumes mapping
  */
 export async function getUserVolumeFromBlockchain(walletAddress: string): Promise<{
   buyVolume: number
@@ -30,14 +30,13 @@ export async function getUserVolumeFromBlockchain(walletAddress: string): Promis
   totalVolume: number
 }> {
   try {
-    const contract = await getContract()
-    const [buyVolumeWei, sellVolumeWei] = await contract.getUserVolume(walletAddress)
+    const volume = await getUserVolume(walletAddress)
 
-    const buyVolume = Number.parseFloat(formatEther(buyVolumeWei))
-    const sellVolume = Number.parseFloat(formatEther(sellVolumeWei))
-    const totalVolume = buyVolume + sellVolume
-
-    return { buyVolume, sellVolume, totalVolume }
+    return {
+      buyVolume: Number.parseFloat(volume.buyVolume),
+      sellVolume: Number.parseFloat(volume.sellVolume),
+      totalVolume: Number.parseFloat(volume.totalVolume),
+    }
   } catch (error) {
     console.error("[v0] Failed to fetch user volume from blockchain:", error)
     return { buyVolume: 0, sellVolume: 0, totalVolume: 0 }

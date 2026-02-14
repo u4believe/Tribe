@@ -14,9 +14,9 @@ Add your admin wallet address(es) to the project environment variables:
 **Format:** Comma-separated list of wallet addresses (case-insensitive)
 
 **Example:**
-\`\`\`
+```
 NEXT_PUBLIC_ADMIN_ADDRESSES=0x1234567890abcdef1234567890abcdef12345678,0xabcdefabcdefabcdefabcdefabcdefabcdefabcd
-\`\`\`
+```
 
 ### 2. How to Add Environment Variables
 
