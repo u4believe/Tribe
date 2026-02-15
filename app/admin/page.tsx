@@ -30,11 +30,18 @@ export default function AdminPage() {
   const { address } = useWallet()
   const userIsAdmin = isAdmin(address)
 
-  const [tokenAddress, setTokenAddress] = useState("")
-  const [spreadPercent, setSpreadPercent] = useState("")
+  const [buySpreadToken, setBuySpreadToken] = useState("")
+  const [buySpreadPercent, setBuySpreadPercent] = useState("")
+  const [sellSpreadToken, setSellSpreadToken] = useState("")
+  const [sellSpreadPercent, setSellSpreadPercent] = useState("")
+  const [emergencyToken, setEmergencyToken] = useState("")
   const [routerAddress, setRouterAddress] = useState("")
+  const [infoToken, setInfoToken] = useState("")
+  const [collectFeesToken, setCollectFeesToken] = useState("")
+  const [completeLaunchToken, setCompleteLaunchToken] = useState("")
+  const [postMigrationFee, setPostMigrationFee] = useState("")
+  const [globalFeePercent, setGlobalFeePercent] = useState("")
   const [newOwnerAddress, setNewOwnerAddress] = useState("")
-  const [feePercent, setFeePercent] = useState("")
   const [adminMessage, setAdminMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
@@ -82,16 +89,16 @@ export default function AdminPage() {
   }
 
   const handleSetBuySpread = async () => {
-    if (!tokenAddress || !spreadPercent) {
+    if (!buySpreadToken || !buySpreadPercent) {
       setAdminMessage("Please enter token address and spread percent")
       return
     }
     setIsLoading(true)
     try {
-      await setTokenBuySpread(tokenAddress, Number.parseInt(spreadPercent))
+      await setTokenBuySpread(buySpreadToken, Number.parseInt(buySpreadPercent))
       setAdminMessage("Buy spread set successfully!")
-      setTokenAddress("")
-      setSpreadPercent("")
+      setBuySpreadToken("")
+      setBuySpreadPercent("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -100,16 +107,16 @@ export default function AdminPage() {
   }
 
   const handleSetSellSpread = async () => {
-    if (!tokenAddress || !spreadPercent) {
+    if (!sellSpreadToken || !sellSpreadPercent) {
       setAdminMessage("Please enter token address and spread percent")
       return
     }
     setIsLoading(true)
     try {
-      await setTokenSellSpread(tokenAddress, Number.parseInt(spreadPercent))
+      await setTokenSellSpread(sellSpreadToken, Number.parseInt(sellSpreadPercent))
       setAdminMessage("Sell spread set successfully!")
-      setTokenAddress("")
-      setSpreadPercent("")
+      setSellSpreadToken("")
+      setSellSpreadPercent("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -118,15 +125,15 @@ export default function AdminPage() {
   }
 
   const handleEmergencyWithdraw = async () => {
-    if (!tokenAddress) {
+    if (!emergencyToken) {
       setAdminMessage("Please enter token address")
       return
     }
     setIsLoading(true)
     try {
-      await emergencyWithdraw(tokenAddress)
+      await emergencyWithdraw(emergencyToken)
       setAdminMessage("Emergency withdrawal successful!")
-      setTokenAddress("")
+      setEmergencyToken("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -152,13 +159,13 @@ export default function AdminPage() {
   }
 
   const handleGetTokenInfo = async () => {
-    if (!tokenAddress) {
+    if (!infoToken) {
       setAdminMessage("Please enter token address")
       return
     }
     setIsLoading(true)
     try {
-      const info = await getTokenInfo(tokenAddress)
+      const info = await getTokenInfo(infoToken)
       setAdminMessage(`Token Info: Created by ${info.creator}, Completed: ${info.completed}`)
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
@@ -168,15 +175,15 @@ export default function AdminPage() {
   }
 
   const handleCollectFees = async () => {
-    if (!tokenAddress) {
+    if (!collectFeesToken) {
       setAdminMessage("Please enter token address")
       return
     }
     setIsLoading(true)
     try {
-      await collectAndSplitTransferFees(tokenAddress)
+      await collectAndSplitTransferFees(collectFeesToken)
       setAdminMessage("Transfer fees collected and split successfully!")
-      setTokenAddress("")
+      setCollectFeesToken("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -185,7 +192,7 @@ export default function AdminPage() {
   }
 
   const handleCompleteTokenLaunch = async () => {
-    if (!tokenAddress) {
+    if (!completeLaunchToken) {
       setAdminMessage("Please enter token address")
       return
     }
@@ -194,9 +201,9 @@ export default function AdminPage() {
     }
     setIsLoading(true)
     try {
-      await completeTokenLaunch(tokenAddress)
+      await completeTokenLaunch(completeLaunchToken)
       setAdminMessage("Token launch completed successfully!")
-      setTokenAddress("")
+      setCompleteLaunchToken("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -205,15 +212,15 @@ export default function AdminPage() {
   }
 
   const handleSetTransferFee = async () => {
-    if (!feePercent) {
+    if (!postMigrationFee) {
       setAdminMessage("Please enter fee percent")
       return
     }
     setIsLoading(true)
     try {
-      await setDefaultPostMigrationTransferFeePercent(Number.parseInt(feePercent))
+      await setDefaultPostMigrationTransferFeePercent(Number.parseInt(postMigrationFee))
       setAdminMessage("Default post-migration transfer fee set successfully!")
-      setFeePercent("")
+      setPostMigrationFee("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -222,15 +229,15 @@ export default function AdminPage() {
   }
 
   const handleSetFeePercent = async () => {
-    if (!feePercent) {
+    if (!globalFeePercent) {
       setAdminMessage("Please enter fee percent")
       return
     }
     setIsLoading(true)
     try {
-      await setFeePercentContract(Number.parseInt(feePercent))
+      await setFeePercentContract(Number.parseInt(globalFeePercent))
       setAdminMessage("Fee percent set successfully!")
-      setFeePercent("")
+      setGlobalFeePercent("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -382,15 +389,15 @@ export default function AdminPage() {
                 <Input
                   type="text"
                   placeholder="Token address"
-                  value={tokenAddress}
-                  onChange={(e) => setTokenAddress(e.target.value)}
+                  value={buySpreadToken}
+                  onChange={(e) => setBuySpreadToken(e.target.value)}
                   className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Input
                   type="number"
                   placeholder="Spread %"
-                  value={spreadPercent}
-                  onChange={(e) => setSpreadPercent(e.target.value)}
+                  value={buySpreadPercent}
+                  onChange={(e) => setBuySpreadPercent(e.target.value)}
                   className="w-24 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
@@ -409,15 +416,15 @@ export default function AdminPage() {
                 <Input
                   type="text"
                   placeholder="Token address"
-                  value={tokenAddress}
-                  onChange={(e) => setTokenAddress(e.target.value)}
+                  value={sellSpreadToken}
+                  onChange={(e) => setSellSpreadToken(e.target.value)}
                   className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Input
                   type="number"
                   placeholder="Spread %"
-                  value={spreadPercent}
-                  onChange={(e) => setSpreadPercent(e.target.value)}
+                  value={sellSpreadPercent}
+                  onChange={(e) => setSellSpreadPercent(e.target.value)}
                   className="w-24 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
@@ -436,8 +443,8 @@ export default function AdminPage() {
                 <Input
                   type="text"
                   placeholder="Token address"
-                  value={tokenAddress}
-                  onChange={(e) => setTokenAddress(e.target.value)}
+                  value={emergencyToken}
+                  onChange={(e) => setEmergencyToken(e.target.value)}
                   className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
@@ -476,8 +483,8 @@ export default function AdminPage() {
                 <Input
                   type="text"
                   placeholder="Token address"
-                  value={tokenAddress}
-                  onChange={(e) => setTokenAddress(e.target.value)}
+                  value={infoToken}
+                  onChange={(e) => setInfoToken(e.target.value)}
                   className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
@@ -516,8 +523,8 @@ export default function AdminPage() {
                 <Input
                   type="text"
                   placeholder="Token address"
-                  value={tokenAddress}
-                  onChange={(e) => setTokenAddress(e.target.value)}
+                  value={collectFeesToken}
+                  onChange={(e) => setCollectFeesToken(e.target.value)}
                   className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
@@ -539,8 +546,8 @@ export default function AdminPage() {
                 <Input
                   type="text"
                   placeholder="Token address"
-                  value={tokenAddress}
-                  onChange={(e) => setTokenAddress(e.target.value)}
+                  value={completeLaunchToken}
+                  onChange={(e) => setCompleteLaunchToken(e.target.value)}
                   className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
@@ -562,8 +569,8 @@ export default function AdminPage() {
                 <Input
                   type="number"
                   placeholder="Fee percent"
-                  value={feePercent}
-                  onChange={(e) => setFeePercent(e.target.value)}
+                  value={postMigrationFee}
+                  onChange={(e) => setPostMigrationFee(e.target.value)}
                   className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
@@ -585,8 +592,8 @@ export default function AdminPage() {
                 <Input
                   type="number"
                   placeholder="Fee percent"
-                  value={feePercent}
-                  onChange={(e) => setFeePercent(e.target.value)}
+                  value={globalFeePercent}
+                  onChange={(e) => setGlobalFeePercent(e.target.value)}
                   className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
