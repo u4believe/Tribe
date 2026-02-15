@@ -1,8 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { useState, useEffect } from "react"
 import { ArrowRight } from "lucide-react"
 
 interface WelcomeSplashProps {
@@ -10,26 +8,61 @@ interface WelcomeSplashProps {
 }
 
 export default function WelcomeSplash({ onEnter }: WelcomeSplashProps) {
-  const [isVisible, setIsVisible] = useState(true)
   const [isExiting, setIsExiting] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    const handler = (e: MouseEvent) => {
+      console.log("[splash] click detected on document")
+    }
+    document.addEventListener("click", handler)
+    return () => document.removeEventListener("click", handler)
+  }, [mounted])
 
   const handleEnter = () => {
+    console.log("[splash] handleEnter called, isExiting:", isExiting)
+    if (isExiting) return
     setIsExiting(true)
     setTimeout(() => {
-      setIsVisible(false)
+      console.log("[splash] timeout fired, calling onEnter")
       onEnter()
-    }, 500)
+    }, 400)
   }
 
-  if (!isVisible) return null
+  if (!mounted) return null
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black transition-opacity duration-500 ${
-        isExiting ? "opacity-0" : "opacity-100"
-      }`}
+      onClick={handleEnter}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "black",
+        opacity: isExiting ? 0 : 1,
+        transition: "opacity 400ms ease-out",
+        cursor: "pointer",
+      }}
     >
-      <Card className="relative z-10 bg-card border border-border hover:border-primary/50 transition-all hover:shadow-lg rounded-xl max-w-md mx-4">
+      <div
+        onClick={(e) => {
+          e.stopPropagation()
+          handleEnter()
+        }}
+        className="bg-card border border-border hover:border-primary/50 transition-all hover:shadow-lg rounded-xl max-w-md mx-4"
+      >
         <div className="p-6 md:p-8 space-y-5">
           <div className="flex items-center justify-center pb-5 border-b border-border">
             <div className="w-24 h-24 rounded-full border-2 border-border overflow-hidden">
@@ -46,17 +79,35 @@ export default function WelcomeSplash({ onEnter }: WelcomeSplashProps) {
           </div>
 
           <div className="pt-2">
-            <Button
-              onClick={handleEnter}
-              size="lg"
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                console.log("[splash] button clicked directly")
+                handleEnter()
+              }}
+              style={{
+                width: "100%",
+                padding: "12px 24px",
+                backgroundColor: "var(--primary, #14b8a6)",
+                color: "var(--primary-foreground, black)",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "16px",
+                fontWeight: 500,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
             >
               Enter Launchpad
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

@@ -28,12 +28,16 @@ export default function Home() {
   const [starredTokenAddresses, setStarredTokenAddresses] = useState<string[]>([])
   const [hoveredToken, setHoveredToken] = useState<MemeToken | null>(null)
   const { address } = useWallet()
-  const [showSplash, setShowSplash] = useState(() => {
-    if (typeof window !== "undefined") {
-      return !sessionStorage.getItem("splashSeen")
+  const [showSplash, setShowSplash] = useState(true)
+  const [splashReady, setSplashReady] = useState(false)
+
+  useEffect(() => {
+    const seen = sessionStorage.getItem("splashSeen")
+    if (seen) {
+      setShowSplash(false)
     }
-    return true
-  })
+    setSplashReady(true)
+  }, [])
 
   useEffect(() => {
     loadTokens()
@@ -220,7 +224,7 @@ export default function Home() {
 
   return (
     <>
-      {showSplash && <WelcomeSplash onEnter={handleSplashEnter} />}
+      {showSplash && splashReady && <WelcomeSplash onEnter={handleSplashEnter} />}
       <main className="flex min-h-screen bg-background">
         <Sidebar />
         <div className="flex-1 md:ml-16">
