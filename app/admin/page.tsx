@@ -19,6 +19,7 @@ import {
   completeTokenLaunch,
   setDefaultPostMigrationTransferFeePercent,
   transferOwnership,
+  setFeePercent as setFeePercentContract,
 } from "@/lib/contract-functions"
 
 export default function AdminPage() {
@@ -212,6 +213,23 @@ export default function AdminPage() {
     try {
       await setDefaultPostMigrationTransferFeePercent(Number.parseInt(feePercent))
       setAdminMessage("Default post-migration transfer fee set successfully!")
+      setFeePercent("")
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSetFeePercent = async () => {
+    if (!feePercent) {
+      setAdminMessage("Please enter fee percent")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await setFeePercentContract(Number.parseInt(feePercent))
+      setAdminMessage("Fee percent set successfully!")
       setFeePercent("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
@@ -550,6 +568,29 @@ export default function AdminPage() {
                 />
                 <Button
                   onClick={handleSetTransferFee}
+                  disabled={isLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Set Fee
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-green-300">Set Fee Percent</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Set the global fee percentage for the contract.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Fee percent"
+                  value={feePercent}
+                  onChange={(e) => setFeePercent(e.target.value)}
+                  className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Button
+                  onClick={handleSetFeePercent}
                   disabled={isLoading}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >

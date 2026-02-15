@@ -523,6 +523,22 @@ export async function transferOwnership(newOwner: string) {
   }
 }
 
+export async function setFeePercent(newFeePercent: number) {
+  try {
+    console.log("[v0] setFeePercent - Setting fee percent:", { newFeePercent })
+
+    const contract = await getContract()
+    const tx = await contract.setFeePercent(newFeePercent)
+    const receipt = await tx.wait()
+
+    console.log("[v0] setFeePercent - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to set fee percent:", error)
+    throw error
+  }
+}
+
 export async function getUserTokenBalance(tokenAddress: string, userAddress: string) {
   try {
     const contract = await getContract()
