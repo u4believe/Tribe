@@ -127,7 +127,7 @@ export function HexagonalRating({ token }: HexagonalRatingProps) {
   const metricValues = [metrics.liquidity, metrics.rep, metrics.sell, metrics.popularity, metrics.dex, metrics.buy]
 
   return (
-    <div className="border border-border rounded-lg p-4">
+    <div className="p-4">
       <svg viewBox="0 0 340 280" className="w-full max-w-[300px] mx-auto">
         {/* Background hexagon grid */}
         <polygon
