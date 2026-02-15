@@ -128,7 +128,7 @@ export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
 
   return (
     <>
-      <div className="fixed top-0 left-0 md:left-16 right-0 z-50">
+      <div className="fixed top-0 left-0 md:left-16 right-0 z-[60]">
         {showDisclaimer && (
           <div className="absolute top-0 left-0 right-0 bg-yellow-500/90 text-black px-2 md:px-4 py-1 flex items-center justify-center gap-2 md:gap-3 z-[60]">
             <AlertTriangleIcon />
