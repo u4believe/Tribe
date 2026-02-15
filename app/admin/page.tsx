@@ -10,8 +10,7 @@ import { useWallet } from "@/hooks/use-wallet"
 import { isAdmin } from "@/lib/admin-config"
 import { importTokensFromContract } from "@/lib/contract-import"
 import {
-  setTokenBuySpread,
-  setTokenSellSpread,
+  setCreatorTransferFee,
   emergencyWithdraw,
   setDexRouter,
   getTokenInfo,
@@ -30,10 +29,8 @@ export default function AdminPage() {
   const { address } = useWallet()
   const userIsAdmin = isAdmin(address)
 
-  const [buySpreadToken, setBuySpreadToken] = useState("")
-  const [buySpreadPercent, setBuySpreadPercent] = useState("")
-  const [sellSpreadToken, setSellSpreadToken] = useState("")
-  const [sellSpreadPercent, setSellSpreadPercent] = useState("")
+  const [creatorFeeToken, setCreatorFeeToken] = useState("")
+  const [creatorFeePercent, setCreatorFeePercent] = useState("")
   const [emergencyToken, setEmergencyToken] = useState("")
   const [routerAddress, setRouterAddress] = useState("")
   const [infoToken, setInfoToken] = useState("")
@@ -88,35 +85,17 @@ export default function AdminPage() {
     )
   }
 
-  const handleSetBuySpread = async () => {
-    if (!buySpreadToken || !buySpreadPercent) {
-      setAdminMessage("Please enter token address and spread percent")
+  const handleSetCreatorTransferFee = async () => {
+    if (!creatorFeeToken || !creatorFeePercent) {
+      setAdminMessage("Please enter token address and fee percent")
       return
     }
     setIsLoading(true)
     try {
-      await setTokenBuySpread(buySpreadToken, Number.parseInt(buySpreadPercent))
-      setAdminMessage("Buy spread set successfully!")
-      setBuySpreadToken("")
-      setBuySpreadPercent("")
-    } catch (error) {
-      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleSetSellSpread = async () => {
-    if (!sellSpreadToken || !sellSpreadPercent) {
-      setAdminMessage("Please enter token address and spread percent")
-      return
-    }
-    setIsLoading(true)
-    try {
-      await setTokenSellSpread(sellSpreadToken, Number.parseInt(sellSpreadPercent))
-      setAdminMessage("Sell spread set successfully!")
-      setSellSpreadToken("")
-      setSellSpreadPercent("")
+      await setCreatorTransferFee(creatorFeeToken, Number.parseInt(creatorFeePercent))
+      setAdminMessage("Creator transfer fee set successfully!")
+      setCreatorFeeToken("")
+      setCreatorFeePercent("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -384,51 +363,27 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-purple-300">Set Token Buy Spread</h3>
+              <h3 className="font-semibold mb-2 text-purple-300">Set Creator Transfer Fee</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Set the transfer fee percentage for a specific token&apos;s creator.
+              </p>
               <div className="flex gap-2 mb-3">
                 <Input
                   type="text"
                   placeholder="Token address"
-                  value={buySpreadToken}
-                  onChange={(e) => setBuySpreadToken(e.target.value)}
+                  value={creatorFeeToken}
+                  onChange={(e) => setCreatorFeeToken(e.target.value)}
                   className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Input
                   type="number"
-                  placeholder="Spread %"
-                  value={buySpreadPercent}
-                  onChange={(e) => setBuySpreadPercent(e.target.value)}
+                  placeholder="Fee %"
+                  value={creatorFeePercent}
+                  onChange={(e) => setCreatorFeePercent(e.target.value)}
                   className="w-24 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
-                  onClick={handleSetBuySpread}
-                  disabled={isLoading}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  Set
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-purple-300">Set Token Sell Spread</h3>
-              <div className="flex gap-2 mb-3">
-                <Input
-                  type="text"
-                  placeholder="Token address"
-                  value={sellSpreadToken}
-                  onChange={(e) => setSellSpreadToken(e.target.value)}
-                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
-                />
-                <Input
-                  type="number"
-                  placeholder="Spread %"
-                  value={sellSpreadPercent}
-                  onChange={(e) => setSellSpreadPercent(e.target.value)}
-                  className="w-24 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
-                />
-                <Button
-                  onClick={handleSetSellSpread}
+                  onClick={handleSetCreatorTransferFee}
                   disabled={isLoading}
                   className="bg-purple-600 hover:bg-purple-700 text-white"
                 >

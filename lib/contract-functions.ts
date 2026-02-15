@@ -388,36 +388,19 @@ export async function getTotalTVT(): Promise<string> {
   }
 }
 
-export async function setTokenBuySpread(tokenAddress: string, spreadPercent: number) {
+export async function setCreatorTransferFee(tokenAddress: string, transferFeePercent: number) {
   try {
     tokenAddress = formatAddress(tokenAddress)
-    console.log("[v0] setTokenBuySpread - Setting buy spread:", { tokenAddress, spreadPercent })
+    console.log("[v0] setCreatorTransferFee - Setting creator transfer fee:", { tokenAddress, transferFeePercent })
 
     const contract = await getContract()
-    const tx = await contract.setTokenBuySpread(tokenAddress, spreadPercent)
+    const tx = await contract.setCreatorTransferFee(tokenAddress, transferFeePercent)
     const receipt = await tx.wait()
 
-    console.log("[v0] setTokenBuySpread - Success!")
+    console.log("[v0] setCreatorTransferFee - Success!")
     return receipt
   } catch (error) {
-    console.error("Failed to set token buy spread:", error)
-    throw error
-  }
-}
-
-export async function setTokenSellSpread(tokenAddress: string, spreadPercent: number) {
-  try {
-    tokenAddress = formatAddress(tokenAddress)
-    console.log("[v0] setTokenSellSpread - Setting sell spread:", { tokenAddress, spreadPercent })
-
-    const contract = await getContract()
-    const tx = await contract.setTokenSellSpread(tokenAddress, spreadPercent)
-    const receipt = await tx.wait()
-
-    console.log("[v0] setTokenSellSpread - Success!")
-    return receipt
-  } catch (error) {
-    console.error("Failed to set token sell spread:", error)
+    console.error("Failed to set creator transfer fee:", error)
     throw error
   }
 }
