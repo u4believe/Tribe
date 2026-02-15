@@ -456,6 +456,73 @@ export async function setDexRouter(routerAddress: string) {
   }
 }
 
+export async function collectAndSplitTransferFees(tokenAddress: string) {
+  try {
+    tokenAddress = formatAddress(tokenAddress)
+    console.log("[v0] collectAndSplitTransferFees - Collecting fees for:", { tokenAddress })
+
+    const contract = await getContract()
+    const tx = await contract.collectAndSplitTransferFees(tokenAddress)
+    const receipt = await tx.wait()
+
+    console.log("[v0] collectAndSplitTransferFees - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to collect and split transfer fees:", error)
+    throw error
+  }
+}
+
+export async function completeTokenLaunch(tokenAddress: string) {
+  try {
+    tokenAddress = formatAddress(tokenAddress)
+    console.log("[v0] completeTokenLaunch - Completing launch for:", { tokenAddress })
+
+    const contract = await getContract()
+    const tx = await contract.completeTokenLaunch(tokenAddress)
+    const receipt = await tx.wait()
+
+    console.log("[v0] completeTokenLaunch - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to complete token launch:", error)
+    throw error
+  }
+}
+
+export async function setDefaultPostMigrationTransferFeePercent(feePercent: number) {
+  try {
+    console.log("[v0] setDefaultPostMigrationTransferFeePercent - Setting fee:", { feePercent })
+
+    const contract = await getContract()
+    const tx = await contract.setDefaultPostMigrationTransferFeePercent(feePercent)
+    const receipt = await tx.wait()
+
+    console.log("[v0] setDefaultPostMigrationTransferFeePercent - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to set default post-migration transfer fee:", error)
+    throw error
+  }
+}
+
+export async function transferOwnership(newOwner: string) {
+  try {
+    newOwner = formatAddress(newOwner)
+    console.log("[v0] transferOwnership - Transferring to:", { newOwner })
+
+    const contract = await getContract()
+    const tx = await contract.transferOwnership(newOwner)
+    const receipt = await tx.wait()
+
+    console.log("[v0] transferOwnership - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to transfer ownership:", error)
+    throw error
+  }
+}
+
 export async function getUserTokenBalance(tokenAddress: string, userAddress: string) {
   try {
     const contract = await getContract()

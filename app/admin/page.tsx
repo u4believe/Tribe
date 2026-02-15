@@ -15,6 +15,10 @@ import {
   emergencyWithdraw,
   setDexRouter,
   getTokenInfo,
+  collectAndSplitTransferFees,
+  completeTokenLaunch,
+  setDefaultPostMigrationTransferFeePercent,
+  transferOwnership,
 } from "@/lib/contract-functions"
 
 export default function AdminPage() {
@@ -28,6 +32,8 @@ export default function AdminPage() {
   const [tokenAddress, setTokenAddress] = useState("")
   const [spreadPercent, setSpreadPercent] = useState("")
   const [routerAddress, setRouterAddress] = useState("")
+  const [newOwnerAddress, setNewOwnerAddress] = useState("")
+  const [feePercent, setFeePercent] = useState("")
   const [adminMessage, setAdminMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
@@ -153,6 +159,85 @@ export default function AdminPage() {
     try {
       const info = await getTokenInfo(tokenAddress)
       setAdminMessage(`Token Info: Created by ${info.creator}, Completed: ${info.completed}`)
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCollectFees = async () => {
+    if (!tokenAddress) {
+      setAdminMessage("Please enter token address")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await collectAndSplitTransferFees(tokenAddress)
+      setAdminMessage("Transfer fees collected and split successfully!")
+      setTokenAddress("")
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCompleteTokenLaunch = async () => {
+    if (!tokenAddress) {
+      setAdminMessage("Please enter token address")
+      return
+    }
+    if (!confirm("Are you sure you want to complete this token launch? This action cannot be undone.")) {
+      return
+    }
+    setIsLoading(true)
+    try {
+      await completeTokenLaunch(tokenAddress)
+      setAdminMessage("Token launch completed successfully!")
+      setTokenAddress("")
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSetTransferFee = async () => {
+    if (!feePercent) {
+      setAdminMessage("Please enter fee percent")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await setDefaultPostMigrationTransferFeePercent(Number.parseInt(feePercent))
+      setAdminMessage("Default post-migration transfer fee set successfully!")
+      setFeePercent("")
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleTransferOwnership = async () => {
+    if (!newOwnerAddress) {
+      setAdminMessage("Please enter new owner address")
+      return
+    }
+    if (!confirm("WARNING: This will transfer contract ownership to a new address. Are you absolutely sure?")) {
+      return
+    }
+    const confirmation = prompt("Type TRANSFER to confirm ownership transfer:")
+    if (confirmation !== "TRANSFER") {
+      setAdminMessage("Ownership transfer cancelled")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await transferOwnership(newOwnerAddress)
+      setAdminMessage("Ownership transferred successfully!")
+      setNewOwnerAddress("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -398,15 +483,103 @@ export default function AdminPage() {
         <Card className="mb-6 border-green-500/50 bg-card">
           <CardHeader>
             <CardTitle className="text-green-400 flex items-center gap-2">
-              <RefreshCw className="h-5 w-5" />
-              Legacy Contract Functions
+              <Settings className="h-5 w-5" />
+              Contract Management
             </CardTitle>
-            <CardDescription className="text-gray-400">Deprecated admin functions from previous contract version</CardDescription>
+            <CardDescription className="text-gray-400">Token launch, fees, and ownership functions</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-gray-400">
-              These functions were available in the previous contract and are no longer used. Please use the Admin Settings above instead.
-            </p>
+            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-green-300">Collect & Split Transfer Fees</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Collect accumulated transfer fees for a token and split them according to the contract rules.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Token address"
+                  value={tokenAddress}
+                  onChange={(e) => setTokenAddress(e.target.value)}
+                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Button
+                  onClick={handleCollectFees}
+                  disabled={isLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Collect
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-green-300">Complete Token Launch</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Manually complete a token launch. This will finalize the bonding curve and migrate liquidity.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Token address"
+                  value={tokenAddress}
+                  onChange={(e) => setTokenAddress(e.target.value)}
+                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Button
+                  onClick={handleCompleteTokenLaunch}
+                  disabled={isLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Complete
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-green-300">Set Default Post-Migration Transfer Fee</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Set the default transfer fee percentage applied to tokens after they migrate from the bonding curve.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Fee percent"
+                  value={feePercent}
+                  onChange={(e) => setFeePercent(e.target.value)}
+                  className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Button
+                  onClick={handleSetTransferFee}
+                  disabled={isLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Set Fee
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-orange-300">Transfer Ownership</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Transfer contract ownership to a new address. This is irreversible - double check the address.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="New owner address"
+                  value={newOwnerAddress}
+                  onChange={(e) => setNewOwnerAddress(e.target.value)}
+                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Button
+                  onClick={handleTransferOwnership}
+                  disabled={isLoading}
+                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  Transfer
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
