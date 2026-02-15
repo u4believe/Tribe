@@ -37,3 +37,8 @@ externalPort = 80
 deploymentTarget = "autoscale"
 run = ["npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "5000"]
 build = ["npm", "run", "build"]
+
+[userenv]
+
+[userenv.shared]
+NEXT_PUBLIC_ADMIN_ADDRESSES = "0xD4F79436a2a69C70127570749dc39Ae5D5C0c646"
