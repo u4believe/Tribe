@@ -200,7 +200,7 @@ export default function Header({ onCreateClick, onAlphaClick }: HeaderProps) {
                   </Button>
 
                   {showMenu && (
-                    <div className="absolute right-0 mt-2 w-44 md:w-48 bg-card border border-border rounded-lg shadow-lg z-[100]">
+                    <div className="absolute right-0 mt-2 w-44 md:w-48 bg-card border border-border rounded-lg shadow-lg z-[200]">
                       <div className="p-2 md:p-3 border-b border-border">
                         <div className="flex items-center gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded bg-muted/30">
                           <WalletIcon />
