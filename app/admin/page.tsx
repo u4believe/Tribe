@@ -300,7 +300,7 @@ export default function AdminPage() {
     setMessage("Scanning for invalid tokens...")
 
     try {
-      const { createClient } = await import("@/lib/supabase")
+      const { createClient } = await import("@/lib/supabase/client")
       const supabase = createClient()
       if (!supabase) {
         setMessage("Supabase client not initialized")
