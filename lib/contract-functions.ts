@@ -300,7 +300,11 @@ export async function getTokenInfo(tokenAddress: string) {
     
     console.log("[v0] getTokenInfo - Retrieved:", tokenInfo)
     return tokenInfo
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "CALL_EXCEPTION") {
+      console.log("[v0] Token not found on contract:", tokenAddress)
+      return null
+    }
     console.error("Failed to get token info:", error)
     throw error
   }
@@ -348,8 +352,10 @@ export async function getCurrentPrice(tokenAddress: string) {
     }
 
     return formatEther(price)
-  } catch (error) {
-    console.error("[v0] Failed to get current price:", error)
+  } catch (error: any) {
+    if (error?.code !== "CALL_EXCEPTION") {
+      console.warn("[v0] Failed to get current price:", error?.message || error)
+    }
     return null
   }
 }
