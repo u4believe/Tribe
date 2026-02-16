@@ -85,7 +85,9 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
   const priceChange =
     startPrice && startPrice !== 0 ? (((currentPrice - startPrice) / startPrice) * 100).toFixed(2) : "0.00"
 
-  const bondingCurveProgress = calculateBondingCurveProgress(token.currentSupply ?? 0)
+  const rawSupply = token.currentSupply ?? 0
+  const humanSupply = rawSupply > 1e15 ? rawSupply / 1e18 : rawSupply
+  const bondingCurveProgress = calculateBondingCurveProgress(humanSupply)
 
   const handleBuyClick = (e: React.MouseEvent) => {
     e.stopPropagation()
