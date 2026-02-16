@@ -11,6 +11,7 @@ import { isAdmin } from "@/lib/admin-config"
 import { importTokensFromContract } from "@/lib/contract-import"
 import {
   setCreatorTransferFee,
+  recoverSellSpreadLiquidity,
   emergencyWithdraw,
   setDexRouter,
   getTokenInfo,
@@ -38,6 +39,7 @@ export default function AdminPage() {
   const [completeLaunchToken, setCompleteLaunchToken] = useState("")
   const [postMigrationFee, setPostMigrationFee] = useState("")
   const [globalFeePercent, setGlobalFeePercent] = useState("")
+  const [recoverSpreadToken, setRecoverSpreadToken] = useState("")
   const [newOwnerAddress, setNewOwnerAddress] = useState("")
   const [adminMessage, setAdminMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -217,6 +219,23 @@ export default function AdminPage() {
       await setFeePercentContract(Number.parseInt(globalFeePercent))
       setAdminMessage("Fee percent set successfully!")
       setGlobalFeePercent("")
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRecoverSellSpreadLiquidity = async () => {
+    if (!recoverSpreadToken) {
+      setAdminMessage("Please enter token address")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await recoverSellSpreadLiquidity(recoverSpreadToken)
+      setAdminMessage("Sell spread liquidity recovered successfully!")
+      setRecoverSpreadToken("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -557,6 +576,29 @@ export default function AdminPage() {
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   Set Fee
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-blue-300">Recover Sell Spread Liquidity</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Recover excess liquidity from a token&apos;s sell spread back to the treasury.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Token address"
+                  value={recoverSpreadToken}
+                  onChange={(e) => setRecoverSpreadToken(e.target.value)}
+                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Button
+                  onClick={handleRecoverSellSpreadLiquidity}
+                  disabled={isLoading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Recover
                 </Button>
               </div>
             </div>

@@ -28,5 +28,12 @@ A Next.js 15 web application for launching and trading meme tokens on a bonding 
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 
+## Key Configuration
+- **Contract Address**: `0xcDa22FcC22be684712CFBBcaFf365dBDF2FDD080` (Intuition Mainnet)
+- **Admin Wallet**: `0xD4F79436a2a69C70127570749dc39Ae5D5C0c646`
+- **Contract ABI**: `lib/contract-abi.json` (updated 2026-02-16 with sell spread and recovery functions)
+
 ## Recent Changes
+- 2026-02-16: Updated contract ABI and address to new deployment (0xcDa22...FDD080), added optional sell spread percent to token creation, added recoverSellSpreadLiquidity to admin panel, separated all admin form inputs into independent state variables
+- 2026-02-15: Added admin panel contract management functions (collectAndSplitTransferFees, completeTokenLaunch, setDefaultPostMigrationTransferFeePercent, transferOwnership, setFeePercent, setCreatorTransferFee)
 - 2026-02-14: Initial Replit setup, configured Next.js `allowedDevOrigins` for Replit proxy

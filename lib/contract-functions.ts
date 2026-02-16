@@ -24,15 +24,15 @@ function formatAddress(address: string): string {
   throw new Error(`Invalid address format: ${address}`)
 }
 
-export async function createToken(name: string, symbol: string, metadata: string) {
+export async function createToken(name: string, symbol: string, metadata: string, spreadPercent: number = 0) {
   try {
     console.log("[v0] createToken - Starting token creation...")
-    console.log("[v0] createToken - Parameters:", { name, symbol, metadata })
+    console.log("[v0] createToken - Parameters:", { name, symbol, metadata, spreadPercent })
 
     const contract = await getContract()
     console.log("[v0] createToken - Contract obtained, calling createToken...")
 
-    const tx = await contract.createToken(name, symbol, metadata)
+    const tx = await contract.createToken(name, symbol, metadata, spreadPercent)
     console.log("[v0] createToken - Transaction sent:", tx.hash)
 
     const receipt = await tx.wait()
@@ -385,6 +385,23 @@ export async function getTotalTVT(): Promise<string> {
   } catch (error) {
     console.error("Failed to get total TVT:", error)
     return "0"
+  }
+}
+
+export async function recoverSellSpreadLiquidity(tokenAddress: string) {
+  try {
+    tokenAddress = formatAddress(tokenAddress)
+    console.log("[v0] recoverSellSpreadLiquidity - Recovering sell spread liquidity:", { tokenAddress })
+
+    const contract = await getContract()
+    const tx = await contract.recoverSellSpreadLiquidity(tokenAddress)
+    const receipt = await tx.wait()
+
+    console.log("[v0] recoverSellSpreadLiquidity - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to recover sell spread liquidity:", error)
+    throw error
   }
 }
 

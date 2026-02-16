@@ -33,6 +33,7 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
     maxSupply: "1000000000",
     image: "/meme-token.jpg",
     intuitionLink: "",
+    sellSpreadPercent: "",
   })
 
   const supplyOptions = [{ value: "1000000000", label: "1 Billion", startPrice: 0.000000001 }]
@@ -111,8 +112,10 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
         intuitionLink: formData.intuitionLink,
       })
 
+      const spreadPercent = formData.sellSpreadPercent ? Number.parseInt(formData.sellSpreadPercent) : 0
+
       console.log("[v0] Creating token on blockchain...")
-      const tokenAddress = await createToken(formData.name, formData.symbol, metadata)
+      const tokenAddress = await createToken(formData.name, formData.symbol, metadata, spreadPercent)
       console.log("[v0] Token created on blockchain:", tokenAddress)
 
       if (!tokenAddress) {
@@ -257,6 +260,23 @@ export default function CreateTokenModal({ onClose, onCreate, existingTokens = [
                 <div className="p-4 rounded-lg border-2 border-primary bg-primary/10">
                   <p className="font-semibold text-foreground">1 Billion</p>
                 </div>
+              </div>
+
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Sell Spread Percent (Optional)</label>
+                <Input
+                  name="sellSpreadPercent"
+                  type="number"
+                  placeholder="e.g., 5"
+                  value={formData.sellSpreadPercent}
+                  onChange={handleInputChange}
+                  className="bg-input border-border text-foreground"
+                  min="0"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Set an optional sell spread percentage for your token. This adds a spread on sell transactions.
+                  Leave empty or set to 0 for no sell spread.
+                </p>
               </div>
             </div>
           )}

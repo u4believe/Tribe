@@ -7,11 +7,11 @@ export function useContract() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const createToken = async (name: string, symbol: string, metadata: string) => {
+  const createToken = async (name: string, symbol: string, metadata: string, spreadPercent: number = 0) => {
     setIsLoading(true)
     setError(null)
     try {
-      const tokenAddress = await contractFunctions.createToken(name, symbol, metadata)
+      const tokenAddress = await contractFunctions.createToken(name, symbol, metadata, spreadPercent)
       return tokenAddress
     } catch (err: any) {
       const errorMsg = err.message || "Failed to create token"
