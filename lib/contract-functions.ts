@@ -673,8 +673,17 @@ export async function getTokenHolders(tokenAddress: string): Promise<TokenHolder
       return []
     }
 
+    let maxSupply = 0
+    try {
+      const tokenInfo = await contract.getTokenInfo(tokenAddress)
+      if (tokenInfo && tokenInfo.maxSupply) {
+        maxSupply = Number.parseFloat(formatEther(tokenInfo.maxSupply))
+      }
+    } catch {
+      console.error("Failed to fetch maxSupply for holders percentage")
+    }
+
     const holders: TokenHolder[] = []
-    let totalSupplyHeld = 0
 
     const addresses = Array.from(uniqueAddresses)
     const batchSize = 5
@@ -693,15 +702,9 @@ export async function getTokenHolders(tokenAddress: string): Promise<TokenHolder
       for (const { addr, balance } of balances) {
         const num = Number.parseFloat(balance)
         if (num > 0) {
-          totalSupplyHeld += num
-          holders.push({ address: addr, balance, percentage: 0 })
+          const percentage = maxSupply > 0 ? (num / maxSupply) * 100 : 0
+          holders.push({ address: addr, balance, percentage })
         }
-      }
-    }
-
-    if (totalSupplyHeld > 0) {
-      for (const h of holders) {
-        h.percentage = (Number.parseFloat(h.balance) / totalSupplyHeld) * 100
       }
     }
 
