@@ -376,6 +376,9 @@ export async function getTotalTVT(): Promise<string> {
 
     for (const token of tokens) {
       try {
+        if (!token.contractAddress || !token.contractAddress.startsWith("0x") || token.contractAddress.length !== 42) {
+          continue
+        }
         const tvt = await getTokenTVT(token.contractAddress)
         totalTVT += Number.parseFloat(tvt)
       } catch (error) {
