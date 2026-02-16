@@ -32,6 +32,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [isCheckingLock, setIsCheckingLock] = useState(true)
   const [liveMarketCap, setLiveMarketCap] = useState<number | null>(null)
+  const [liveBondingProgress, setLiveBondingProgress] = useState<number | null>(null)
   const { address } = useWallet()
 
   useEffect(() => {
@@ -69,8 +70,12 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
           ])
           if (info && price) {
             const supply = Number.parseFloat(formatEther(info.currentSupply))
+            const maxSup = Number.parseFloat(formatEther(info.maxSupply))
             const priceNum = Number.parseFloat(price)
             setLiveMarketCap(supply * priceNum)
+            const bondingLimit = maxSup * 0.7
+            const progress = bondingLimit > 0 ? Math.min((supply / bondingLimit) * 100, 100) : 0
+            setLiveBondingProgress(progress)
           }
         } catch {
         }
@@ -85,9 +90,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
   const priceChange =
     startPrice && startPrice !== 0 ? (((currentPrice - startPrice) / startPrice) * 100).toFixed(2) : "0.00"
 
-  const rawSupply = token.currentSupply ?? 0
-  const humanSupply = rawSupply > 1e15 ? rawSupply / 1e18 : rawSupply
-  const bondingCurveProgress = calculateBondingCurveProgress(humanSupply)
+  const bondingCurveProgress = liveBondingProgress ?? calculateBondingCurveProgress(0)
 
   const handleBuyClick = (e: React.MouseEvent) => {
     e.stopPropagation()
