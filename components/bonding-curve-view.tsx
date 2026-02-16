@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ExternalLink, Lock, AlertTriangle } from "lucide-react"
-import BondingCurveChart from "@/components/bonding-curve-chart"
+import LivePriceChart from "@/components/live-price-chart"
 import TradePanel from "@/components/trade-panel"
 import { fetchAllTokens } from "@/lib/tokens"
 import type { MemeToken } from "@/lib/tokens"
@@ -165,8 +165,8 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
           </Card>
 
           <Card className="bg-card border-border p-6">
-            <h2 className="text-xl font-bold text-foreground mb-4">Bonding Curve Progress</h2>
-            <BondingCurveChart token={token} />
+            <h2 className="text-xl font-bold text-foreground mb-4">Live Price</h2>
+            <LivePriceChart tokenAddress={token.contractAddress} initialPrice={livePrice ?? token.currentPrice} />
           </Card>
 
           <Card className="bg-card border-border p-6">
