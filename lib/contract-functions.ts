@@ -717,6 +717,71 @@ export async function getTokenHolders(tokenAddress: string): Promise<TokenHolder
   }
 }
 
+export interface TradeEvent {
+  time: number
+  price: number
+  type: "buy" | "sell"
+}
+
+export async function getTradeHistory(tokenAddress: string): Promise<TradeEvent[]> {
+  try {
+    if (!tokenAddress || !tokenAddress.startsWith("0x") || tokenAddress.length !== 42) return []
+
+    const jsonProvider = await getJsonProvider()
+    const contract = new Contract(CONTRACT_CONFIG.address, ABI, jsonProvider)
+
+    const currentBlock = await jsonProvider.getBlockNumber()
+    const fromBlock = Math.max(0, currentBlock - 500000)
+
+    const trades: TradeEvent[] = []
+
+    try {
+      const buyFilter = contract.filters.TokensBought(tokenAddress)
+      const buyEvents = await contract.queryFilter(buyFilter, fromBlock, currentBlock)
+      for (const event of buyEvents) {
+        const log = event as any
+        if (log.args && log.args[4]) {
+          const block = await log.getBlock()
+          trades.push({
+            time: block.timestamp * 1000,
+            price: Number.parseFloat(formatEther(log.args[4])),
+            type: "buy",
+          })
+        }
+      }
+    } catch (e) {
+      console.error("Failed to query buy events for chart:", e)
+    }
+
+    try {
+      const sellFilter = contract.filters.TokensSold(tokenAddress)
+      const sellEvents = await contract.queryFilter(sellFilter, fromBlock, currentBlock)
+      for (const event of sellEvents) {
+        const log = event as any
+        if (log.args) {
+          const block = await log.getBlock()
+          const tokens = Number.parseFloat(formatEther(log.args[2]))
+          const payment = Number.parseFloat(formatEther(log.args[3]))
+          const price = tokens > 0 ? payment / tokens : 0
+          trades.push({
+            time: block.timestamp * 1000,
+            price,
+            type: "sell",
+          })
+        }
+      }
+    } catch (e) {
+      console.error("Failed to query sell events for chart:", e)
+    }
+
+    trades.sort((a, b) => a.time - b.time)
+    return trades
+  } catch (error) {
+    console.error("Failed to get trade history:", error)
+    return []
+  }
+}
+
 export async function isTokenUnlocked(tokenAddress: string): Promise<boolean> {
   try {
     tokenAddress = formatAddress(tokenAddress)
