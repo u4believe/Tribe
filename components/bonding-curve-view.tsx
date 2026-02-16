@@ -12,7 +12,8 @@ import type { mockTokens } from "@/lib/mock-data"
 import { formatLargeNumber } from "@/lib/utils"
 import TokenComments from "@/components/token-comments"
 import TokenHolders from "@/components/token-holders"
-import { isTokenUnlocked } from "@/lib/contract-functions"
+import { isTokenUnlocked, getTokenInfo, getCurrentPrice } from "@/lib/contract-functions"
+import { formatEther } from "ethers"
 import { HexagonalRating } from "@/components/hexagonal-rating"
 
 interface BondingCurveViewProps {
@@ -25,6 +26,31 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
   const [token, setToken] = useState<MemeToken>(initialToken)
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [isCheckingLock, setIsCheckingLock] = useState(true)
+  const [liveMarketCap, setLiveMarketCap] = useState<number | null>(null)
+  const [livePrice, setLivePrice] = useState<number | null>(null)
+  const [liveSupply, setLiveSupply] = useState<number | null>(null)
+
+  useEffect(() => {
+    const fetchLiveData = async () => {
+      if (!token.contractAddress || !token.contractAddress.startsWith("0x") || token.contractAddress.length !== 42) return
+      try {
+        const [info, price] = await Promise.all([
+          getTokenInfo(token.contractAddress),
+          getCurrentPrice(token.contractAddress),
+        ])
+        if (info && price) {
+          const supply = Number.parseFloat(formatEther(info.currentSupply))
+          const priceNum = Number.parseFloat(price)
+          setLiveSupply(supply)
+          setLivePrice(priceNum)
+          setLiveMarketCap(supply * priceNum)
+        }
+      } catch (error) {
+        console.log("[v0] Could not fetch live token data, using database values")
+      }
+    }
+    fetchLiveData()
+  }, [token.contractAddress])
 
   const handleTradeComplete = async () => {
     try {
@@ -33,6 +59,20 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
 
       if (updatedToken) {
         setToken(updatedToken)
+      }
+
+      if (token.contractAddress && token.contractAddress.startsWith("0x") && token.contractAddress.length === 42) {
+        const [info, price] = await Promise.all([
+          getTokenInfo(token.contractAddress),
+          getCurrentPrice(token.contractAddress),
+        ])
+        if (info && price) {
+          const supply = Number.parseFloat(formatEther(info.currentSupply))
+          const priceNum = Number.parseFloat(price)
+          setLiveSupply(supply)
+          setLivePrice(priceNum)
+          setLiveMarketCap(supply * priceNum)
+        }
       }
     } catch (error) {
       console.error("Failed to refresh token data:", error)
@@ -111,11 +151,11 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Current Price</p>
-                <p className="text-xl font-bold text-foreground">${token.currentPrice.toFixed(8)}</p>
+                <p className="text-xl font-bold text-foreground">${(livePrice ?? token.currentPrice).toFixed(8)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Trust Stock Value</p>
-                <p className="text-xl font-bold text-foreground">{token.marketCap.toFixed(2)} TRUST</p>
+                <p className="text-xl font-bold text-foreground">{(liveMarketCap ?? token.marketCap).toFixed(2)} TRUST</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Max Supply</p>
