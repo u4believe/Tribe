@@ -12,7 +12,8 @@ import QuickTradeModal from "./quick-trade-modal"
 import { toggleStarToken, isTokenStarred } from "@/lib/starred-tokens"
 import { useWallet } from "@/hooks/use-wallet"
 import type { mockTokens } from "@/lib/mock-data"
-import { isTokenUnlocked } from "@/lib/contract-functions"
+import { isTokenUnlocked, getTokenInfo, getCurrentPrice } from "@/lib/contract-functions"
+import { formatEther } from "ethers"
 
 interface TokenCardProps {
   token: (typeof mockTokens)[0]
@@ -30,6 +31,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
   const [isStarring, setIsStarring] = useState(false)
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [isCheckingLock, setIsCheckingLock] = useState(true)
+  const [liveMarketCap, setLiveMarketCap] = useState<number | null>(null)
   const { address } = useWallet()
 
   useEffect(() => {
@@ -57,6 +59,24 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
     }
 
     checkUnlockStatus()
+
+    const fetchLiveMarketCap = async () => {
+      if (token.contractAddress && token.contractAddress.startsWith("0x") && token.contractAddress.length === 42 && token.contractAddress !== "0x0000000000000000000000000000000000000000") {
+        try {
+          const [info, price] = await Promise.all([
+            getTokenInfo(token.contractAddress),
+            getCurrentPrice(token.contractAddress),
+          ])
+          if (info && price) {
+            const supply = Number.parseFloat(formatEther(info.currentSupply))
+            const priceNum = Number.parseFloat(price)
+            setLiveMarketCap(supply * priceNum)
+          }
+        } catch {
+        }
+      }
+    }
+    fetchLiveMarketCap()
   }, [token.contractAddress])
 
   const currentPrice = token.currentPrice ?? 0
@@ -208,7 +228,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
             </div>
             <div className="flex items-center gap-0.5 min-w-0">
               <span className="text-muted-foreground">Stock:</span>
-              <span className="font-semibold text-foreground truncate">{(token.marketCap ?? 0).toFixed(2)}</span>
+              <span className="font-semibold text-foreground truncate">{(liveMarketCap ?? token.marketCap ?? 0).toFixed(2)}</span>
             </div>
           </div>
 
