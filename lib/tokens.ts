@@ -148,10 +148,15 @@ export async function fetchAllTokens(): Promise<MemeToken[]> {
     }
 
     console.log("[v0] Fetched", tokens.length, "tokens from database")
-    console.log("[v0] Sample token from database:", tokens[0])
 
-    // Fetch creator profiles separately
-    const creatorAddresses = [...new Set(tokens.map((t) => t.creator))]
+    const validTokens = tokens.filter(
+      (t) => t.contract_address && t.contract_address.startsWith("0x") && t.contract_address.length === 42
+    )
+    if (validTokens.length < tokens.length) {
+      console.log("[v0] Filtered out", tokens.length - validTokens.length, "tokens with invalid contract addresses")
+    }
+
+    const creatorAddresses = [...new Set(validTokens.map((t) => t.creator))]
     console.log("[v0] Fetching profiles for creators:", creatorAddresses)
 
     const { data: profiles } = await supabase
@@ -165,7 +170,7 @@ export async function fetchAllTokens(): Promise<MemeToken[]> {
     const profileMap = new Map((profiles || []).map((p) => [p.wallet_address, p]))
 
     // Merge tokens with profiles
-    const result = tokens.map((token) => {
+    const result = validTokens.map((token) => {
       const profile = profileMap.get(token.creator)
       return supabaseToToken({
         ...token,
