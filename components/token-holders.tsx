@@ -3,62 +3,27 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Users } from "lucide-react"
-import { getTokenHolderBalance } from "@/lib/contract-functions"
-import { createBrowserClient } from "@/lib/supabase/client"
-
-interface HolderInfo {
-  address: string
-  balance: string
-  percentage: number
-}
+import { getTokenHolders, type TokenHolder } from "@/lib/contract-functions"
 
 interface TokenHoldersProps {
   tokenAddress: string
-  maxSupply: number
 }
 
-export default function TokenHolders({ tokenAddress, maxSupply }: TokenHoldersProps) {
-  const [holders, setHolders] = useState<HolderInfo[]>([])
+export default function TokenHolders({ tokenAddress }: TokenHoldersProps) {
+  const [holders, setHolders] = useState<TokenHolder[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const loadHolders = async () => {
+      if (!tokenAddress || !tokenAddress.startsWith("0x") || tokenAddress.length !== 42) {
+        setIsLoading(false)
+        return
+      }
+
       try {
         setIsLoading(true)
-
-        const supabase = createBrowserClient()
-        const { data: holdersData, error } = await supabase
-          .from("token_holders")
-          .select("holder_address, balance")
-          .eq("token_address", tokenAddress.toLowerCase())
-
-        if (error) {
-          console.error("Failed to fetch holders:", error)
-          setHolders([])
-          return
-        }
-
-        // Convert to HolderInfo format
-        const holderInfo = (holdersData || [])
-          .map((holder) => {
-            const balance = holder.balance ? Number(holder.balance).toString() : "0"
-            const balanceNum = Number.parseFloat(balance)
-            if (balanceNum <= 0) return null
-
-            const percentage = (balanceNum / maxSupply) * 100
-
-            return {
-              address: holder.holder_address,
-              balance,
-              percentage,
-            }
-          })
-          .filter((h): h is HolderInfo => h !== null)
-
-        // Sort by balance descending
-        holderInfo.sort((a, b) => Number.parseFloat(b.balance) - Number.parseFloat(a.balance))
-
-        setHolders(holderInfo)
+        const holderData = await getTokenHolders(tokenAddress)
+        setHolders(holderData)
       } catch (error) {
         console.error("Failed to load holders:", error)
       } finally {
@@ -67,7 +32,7 @@ export default function TokenHolders({ tokenAddress, maxSupply }: TokenHoldersPr
     }
 
     loadHolders()
-  }, [tokenAddress, maxSupply])
+  }, [tokenAddress])
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -89,7 +54,7 @@ export default function TokenHolders({ tokenAddress, maxSupply }: TokenHoldersPr
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading holders...</div>
+        <div className="text-center py-8 text-muted-foreground">Loading holders from blockchain...</div>
       ) : holders.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />

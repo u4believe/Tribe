@@ -193,7 +193,7 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
             </div>
           </Card>
 
-          <TokenHolders tokenAddress={token.contractAddress} maxSupply={token.maxSupply} />
+          <TokenHolders tokenAddress={token.contractAddress} />
 
           <TokenComments tokenAddress={token.contractAddress} />
         </div>

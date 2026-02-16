@@ -626,6 +626,94 @@ export async function getTokenHolderBalance(tokenAddress: string, holderAddress:
   }
 }
 
+export interface TokenHolder {
+  address: string
+  balance: string
+  percentage: number
+}
+
+export async function getTokenHolders(tokenAddress: string): Promise<TokenHolder[]> {
+  try {
+    const jsonProvider = await getJsonProvider()
+    const contract = new Contract(CONTRACT_CONFIG.address, ABI, jsonProvider)
+    const tokenContract = new Contract(tokenAddress, ERC20_ABI, jsonProvider)
+
+    const currentBlock = await jsonProvider.getBlockNumber()
+    const fromBlock = Math.max(0, currentBlock - 500000)
+
+    const uniqueAddresses = new Set<string>()
+
+    try {
+      const buyFilter = contract.filters.TokensBought(tokenAddress)
+      const buyEvents = await contract.queryFilter(buyFilter, fromBlock, currentBlock)
+      for (const event of buyEvents) {
+        const log = event as any
+        if (log.args && log.args[1]) {
+          uniqueAddresses.add(log.args[1].toLowerCase())
+        }
+      }
+    } catch (e) {
+      console.error("Failed to query buy events:", e)
+    }
+
+    try {
+      const sellFilter = contract.filters.TokensSold(tokenAddress)
+      const sellEvents = await contract.queryFilter(sellFilter, fromBlock, currentBlock)
+      for (const event of sellEvents) {
+        const log = event as any
+        if (log.args && log.args[1]) {
+          uniqueAddresses.add(log.args[1].toLowerCase())
+        }
+      }
+    } catch (e) {
+      console.error("Failed to query sell events:", e)
+    }
+
+    if (uniqueAddresses.size === 0) {
+      return []
+    }
+
+    const holders: TokenHolder[] = []
+    let totalSupplyHeld = 0
+
+    const addresses = Array.from(uniqueAddresses)
+    const batchSize = 5
+    for (let i = 0; i < addresses.length; i += batchSize) {
+      const batch = addresses.slice(i, i + batchSize)
+      const balances = await Promise.all(
+        batch.map(async (addr) => {
+          try {
+            const bal = await tokenContract.balanceOf(addr)
+            return { addr, balance: formatEther(bal) }
+          } catch {
+            return { addr, balance: "0" }
+          }
+        })
+      )
+      for (const { addr, balance } of balances) {
+        const num = Number.parseFloat(balance)
+        if (num > 0) {
+          totalSupplyHeld += num
+          holders.push({ address: addr, balance, percentage: 0 })
+        }
+      }
+    }
+
+    if (totalSupplyHeld > 0) {
+      for (const h of holders) {
+        h.percentage = (Number.parseFloat(h.balance) / totalSupplyHeld) * 100
+      }
+    }
+
+    holders.sort((a, b) => Number.parseFloat(b.balance) - Number.parseFloat(a.balance))
+
+    return holders
+  } catch (error) {
+    console.error("Failed to get token holders:", error)
+    return []
+  }
+}
+
 export async function isTokenUnlocked(tokenAddress: string): Promise<boolean> {
   try {
     tokenAddress = formatAddress(tokenAddress)
