@@ -441,6 +441,34 @@ export async function deleteAllTokens(): Promise<boolean> {
   }
 }
 
+export async function deleteTokensByContractAddress(contractAddress: string): Promise<boolean> {
+  try {
+    const supabase = createClient()
+    if (!supabase) {
+      console.error("[v0] Supabase client not initialized")
+      return false
+    }
+
+    await supabase.from("starred_tokens").delete().eq("token_address", contractAddress)
+
+    const { error } = await supabase
+      .from("meme_tokens")
+      .delete()
+      .eq("contract_address", contractAddress)
+
+    if (error) {
+      console.error("[v0] Error deleting tokens:", error)
+      return false
+    }
+
+    console.log("[v0] Tokens with contract_address", contractAddress, "deleted successfully")
+    return true
+  } catch (error) {
+    console.error("[v0] Failed to delete tokens:", error)
+    return false
+  }
+}
+
 export async function ensureUserProfileExists(walletAddress: string): Promise<boolean> {
   try {
     const supabase = createClient()

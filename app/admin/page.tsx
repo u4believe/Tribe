@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { deleteAllTokens } from "@/lib/tokens"
+import { deleteAllTokens, deleteTokensByContractAddress } from "@/lib/tokens"
 import { Trash2, ShieldX, Download, RefreshCw, Settings } from "lucide-react"
 import { useWallet } from "@/hooks/use-wallet"
 import { isAdmin } from "@/lib/admin-config"
@@ -43,6 +43,7 @@ export default function AdminPage() {
   const [newOwnerAddress, setNewOwnerAddress] = useState("")
   const [adminMessage, setAdminMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isDeletingInvalid, setIsDeletingInvalid] = useState(false)
 
   if (!address) {
     return (
@@ -287,6 +288,57 @@ export default function AdminPage() {
       setImportMessage("Error occurred while importing tokens")
     } finally {
       setIsImporting(false)
+    }
+  }
+
+  const handleDeleteInvalidTokens = async () => {
+    if (!confirm("This will delete all tokens with invalid contract addresses (not starting with 0x or wrong length). Continue?")) {
+      return
+    }
+
+    setIsDeletingInvalid(true)
+    setMessage("Scanning for invalid tokens...")
+
+    try {
+      const { createClient } = await import("@/lib/supabase")
+      const supabase = createClient()
+      if (!supabase) {
+        setMessage("Supabase client not initialized")
+        return
+      }
+
+      const { data: allTokens } = await supabase
+        .from("meme_tokens")
+        .select("id, name, symbol, contract_address")
+
+      if (!allTokens || allTokens.length === 0) {
+        setMessage("No tokens found in database")
+        return
+      }
+
+      const invalidTokens = allTokens.filter(
+        (t) => !t.contract_address || !t.contract_address.startsWith("0x") || t.contract_address.length !== 42
+      )
+
+      if (invalidTokens.length === 0) {
+        setMessage("No invalid tokens found. All tokens have valid contract addresses.")
+        return
+      }
+
+      setMessage(`Found ${invalidTokens.length} invalid token(s): ${invalidTokens.map(t => `${t.symbol} (${t.contract_address})`).join(", ")}. Deleting...`)
+
+      let deleted = 0
+      for (const token of invalidTokens) {
+        const success = await deleteTokensByContractAddress(token.contract_address)
+        if (success) deleted++
+      }
+
+      setMessage(`Deleted ${deleted}/${invalidTokens.length} invalid tokens.`)
+    } catch (error) {
+      console.error("Error deleting invalid tokens:", error)
+      setMessage("Error occurred while deleting invalid tokens")
+    } finally {
+      setIsDeletingInvalid(false)
     }
   }
 
@@ -637,6 +689,16 @@ export default function AdminPage() {
             <CardDescription className="text-gray-400">Irreversible actions that affect the entire platform</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-yellow-300">Delete Invalid Tokens</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Scan for and delete tokens with invalid contract addresses (e.g., symbol saved as address). Only removes broken entries.
+              </p>
+              <Button variant="outline" onClick={handleDeleteInvalidTokens} disabled={isDeletingInvalid} className="border-yellow-500 text-yellow-300 hover:bg-yellow-500/20">
+                {isDeletingInvalid ? "Scanning..." : "Delete Invalid Tokens"}
+              </Button>
+            </div>
+
             <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
               <h3 className="font-semibold mb-2 text-red-300">Delete All Tokens</h3>
               <p className="text-sm text-gray-400 mb-4">
