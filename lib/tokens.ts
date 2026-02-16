@@ -389,7 +389,7 @@ export async function updateTokenInDatabase(
     const { error } = await supabase.from("meme_tokens").update(dbUpdates).eq("contract_address", contractAddress)
 
     if (error) {
-      console.error("[v0] Error updating token:", error)
+      console.warn("[v0] Token update skipped (RLS policy may restrict updates):", error?.message || error?.code || "unknown")
       return false
     }
 
