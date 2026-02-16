@@ -109,8 +109,8 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
       return
     }
 
-    if (!token.contractAddress || token.contractAddress === "") {
-      setError("Invalid token contract address")
+    if (!token.contractAddress || token.contractAddress === "" || !token.contractAddress.startsWith("0x") || token.contractAddress.length !== 42) {
+      setError("This token does not have a valid contract address. It may not have been deployed to the blockchain yet.")
       return
     }
 

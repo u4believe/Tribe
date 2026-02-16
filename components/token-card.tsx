@@ -40,7 +40,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
 
   useEffect(() => {
     const checkUnlockStatus = async () => {
-      if (token.contractAddress && token.contractAddress !== "0x0000000000000000000000000000000000000000") {
+      if (token.contractAddress && token.contractAddress.startsWith("0x") && token.contractAddress.length === 42 && token.contractAddress !== "0x0000000000000000000000000000000000000000") {
         try {
           setIsCheckingLock(true)
           const unlocked = await isTokenUnlocked(token.contractAddress)

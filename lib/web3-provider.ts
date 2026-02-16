@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, formatEther, JsonRpcProvider } from "ethers"
+import { BrowserProvider, Contract, formatEther, JsonRpcProvider, Network } from "ethers"
 import { CONTRACT_CONFIG } from "./contract-config"
 import ABI from "./contract-abi.json"
 
@@ -23,9 +23,12 @@ export async function getProvider() {
 
 export async function getJsonProvider() {
   if (!jsonProvider) {
-    jsonProvider = new JsonRpcProvider(CONTRACT_CONFIG.network.rpcUrl, {
+    const network = Network.from({
       name: CONTRACT_CONFIG.network.name,
       chainId: CONTRACT_CONFIG.chainId,
+    })
+    jsonProvider = new JsonRpcProvider(CONTRACT_CONFIG.network.rpcUrl, network, {
+      staticNetwork: network,
     })
   }
   return jsonProvider

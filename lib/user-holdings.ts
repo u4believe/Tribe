@@ -7,6 +7,8 @@ const ERC20_ABI = ["function balanceOf(address owner) public view returns (uint2
 export async function getUserTokenBalance(tokenAddress: string, userAddress: string): Promise<string> {
   try {
     if (!tokenAddress || !userAddress) return "0"
+    if (!tokenAddress.startsWith("0x") || tokenAddress.length !== 42) return "0"
+    if (!userAddress.startsWith("0x") || userAddress.length !== 42) return "0"
 
     const contract = await getContract()
     const signer = await contract.runner

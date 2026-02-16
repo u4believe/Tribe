@@ -10,7 +10,13 @@ const CONTRACT_ADDRESS = CONTRACT_CONFIG.address
 export async function getAllTokensFromContract() {
   try {
     console.log("[v0] Fetching tokens from contract:", CONTRACT_ADDRESS)
-    const provider = new ethers.JsonRpcProvider(RPC_URL)
+    const network = ethers.Network.from({
+      name: CONTRACT_CONFIG.network.name,
+      chainId: CONTRACT_CONFIG.chainId,
+    })
+    const provider = new ethers.JsonRpcProvider(RPC_URL, network, {
+      staticNetwork: network,
+    })
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider)
 
     const tokenAddresses = await getAllTokenAddresses()

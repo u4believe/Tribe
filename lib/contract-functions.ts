@@ -338,6 +338,7 @@ export async function getTokenInfoWithRetry(
 
 export async function getCurrentPrice(tokenAddress: string) {
   try {
+    tokenAddress = formatAddress(tokenAddress)
     const contract = await getContract()
     const price = await contract.getCurrentPrice(tokenAddress)
 
@@ -355,6 +356,7 @@ export async function getCurrentPrice(tokenAddress: string) {
 
 export async function getTokenTVT(tokenAddress: string): Promise<string> {
   try {
+    tokenAddress = formatAddress(tokenAddress)
     const provider = await getJsonProvider()
     const contract = new Contract(CONTRACT_CONFIG.address, ABI, provider)
     const tvt = await contract.tokenTotalValueTraded(tokenAddress)
@@ -617,6 +619,7 @@ export async function getTokenHolderBalance(tokenAddress: string, holderAddress:
 
 export async function isTokenUnlocked(tokenAddress: string): Promise<boolean> {
   try {
+    tokenAddress = formatAddress(tokenAddress)
     const jsonProvider = await getJsonProvider()
 
     const readOnlyContract = new Contract(CONTRACT_CONFIG.address, ABI, jsonProvider)
