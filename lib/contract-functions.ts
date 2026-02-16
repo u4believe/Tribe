@@ -60,7 +60,7 @@ export async function createToken(name: string, symbol: string, metadata: string
         if (parsed?.name === "TokenCreated") {
           console.log("[v0] createToken - TokenCreated event found!")
           console.log("[v0] createToken - Event args:", parsed.args)
-          tokenAddress = parsed.args?.tokenAddress || parsed.args?.[2]
+          tokenAddress = parsed.args?.token || parsed.args?.[0]
           console.log("[v0] createToken - Token address extracted:", tokenAddress)
           break
         }

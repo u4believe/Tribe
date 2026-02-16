@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react"
 import { getTotalTVT, getTokenTVT, getAllTokenAddresses } from "@/lib/contract-functions"
-import { Contract, JsonRpcProvider } from "ethers"
+import { Contract, Network } from "ethers"
 import { CONTRACT_CONFIG } from "@/lib/contract-config"
 import ABI from "@/lib/contract-abi.json"
+import { getJsonProvider } from "@/lib/web3-provider"
 
 interface TokenTVT {
   symbol: string
@@ -28,10 +29,7 @@ export default function TVTTicker() {
 
   const loadTVTData = async () => {
     try {
-      const provider = new JsonRpcProvider(CONTRACT_CONFIG.network.rpcUrl, {
-        name: CONTRACT_CONFIG.network.name,
-        chainId: CONTRACT_CONFIG.chainId,
-      })
+      const provider = await getJsonProvider()
       const contract = new Contract(CONTRACT_CONFIG.address, ABI, provider)
 
       // Get total TVT
@@ -51,7 +49,7 @@ export default function TVTTicker() {
         if (tokenAddresses && tokenAddresses.length > 0) {
           const tokenDataPromises = tokenAddresses.map(async (address: string) => {
             try {
-              if (!address || address === "0x0000000000000000000000000000000000000000") {
+              if (!address || !address.startsWith("0x") || address.length !== 42 || address === "0x0000000000000000000000000000000000000000") {
                 return null
               }
 
