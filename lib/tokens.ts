@@ -149,11 +149,22 @@ export async function fetchAllTokens(): Promise<MemeToken[]> {
 
     console.log("[v0] Fetched", tokens.length, "tokens from database")
 
+    const HIDDEN_TOKEN_IDS = new Set([
+      "6fb8929f-c14e-4b05-9846-b3ef3c57d44b",
+      "efc07805-5d6a-4705-a3e6-c038132e8c9b",
+      "7fdc6bfb-b826-4920-ad29-06ba457e30e6",
+      "00a88f19-d116-4270-8be5-f8fa234a1995",
+    ])
+
     const validTokens = tokens.filter(
-      (t) => t.contract_address && t.contract_address.startsWith("0x") && t.contract_address.length === 42
+      (t) =>
+        t.contract_address &&
+        t.contract_address.startsWith("0x") &&
+        t.contract_address.length === 42 &&
+        !HIDDEN_TOKEN_IDS.has(t.id)
     )
     if (validTokens.length < tokens.length) {
-      console.log("[v0] Filtered out", tokens.length - validTokens.length, "tokens with invalid contract addresses")
+      console.log("[v0] Filtered out", tokens.length - validTokens.length, "tokens (invalid addresses or hidden)")
     }
 
     const creatorAddresses = [...new Set(validTokens.map((t) => t.creator))]
