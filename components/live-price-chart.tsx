@@ -174,6 +174,14 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
       borderUpColor: "#00e676",
       wickDownColor: "rgba(255, 23, 68, 0.6)",
       wickUpColor: "rgba(0, 230, 118, 0.6)",
+      priceFormat: {
+        type: "custom",
+        formatter: (price: number) => {
+          if (price === 0) return "0.000000000"
+          if (price < 0.000000001) return price.toExponential(4)
+          return price.toFixed(9)
+        },
+      },
     })
 
     chartRef.current = chart
