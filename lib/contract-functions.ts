@@ -121,6 +121,21 @@ export async function buyTokens(tokenAddress: string, trustAmount: string, minTo
       console.log("[v0] buyTokens - Minimum tokens out:", minTokensOut, "tokens")
     }
 
+    const CUSTOM_ERRORS: Record<string, string> = {
+      "0x850c6f76": "Price changed too much during transaction (slippage too high). Try reducing the amount or try again shortly.",
+      "0x36b63ffd": "Price changed too much during sell (slippage too high). Try reducing the amount or try again shortly.",
+      "0x5d1ca88e": "Creator has reached the maximum buy limit for this token.",
+      "0xc30436e9": "This purchase would exceed the maximum token supply. Try buying a smaller amount.",
+      "0xfae7d962": "Token launch has been completed. Trading is no longer available through the bonding curve.",
+      "0xc242447c": "No tokens available to buy. Please enter a valid amount.",
+      "0x99c4b627": "Invalid purchase amount. Please enter a valid TRUST amount.",
+      "0xf4d678b8": "Insufficient TRUST balance. You need more TRUST tokens to complete this purchase.",
+      "0x5a8181f7": "Token is locked. The creator needs to buy more tokens to unlock trading.",
+      "0xc1ab6dc1": "Invalid token address.",
+      "0xb4fa3fb3": "Invalid input provided.",
+      "0x90b8ec18": "Transfer failed. Please try again.",
+    }
+
     try {
       console.log("[v0] buyTokens - Estimating gas...")
       const gasEstimate = await contract.buyTokens.estimateGas(tokenAddress, minTokensOutWei, {
@@ -130,11 +145,18 @@ export async function buyTokens(tokenAddress: string, trustAmount: string, minTo
     } catch (gasError: any) {
       console.error("[v0] buyTokens - Gas estimation failed:", gasError)
 
+      const errorData = gasError?.info?.error?.data?.data || gasError?.data || ""
+      const errorSelector = typeof errorData === "string" ? errorData.slice(0, 10) : ""
+
+      if (errorSelector && CUSTOM_ERRORS[errorSelector]) {
+        throw new Error(CUSTOM_ERRORS[errorSelector])
+      }
+
       const errorMessage = gasError.message || gasError.toString()
 
       if (errorMessage.includes("SlippageTooHigh")) {
         throw new Error(
-          "Price changed too much during transaction. Try increasing slippage tolerance or reducing trade amount.",
+          "Price changed too much during transaction. Try reducing the amount or try again shortly.",
         )
       } else if (errorMessage.includes("TokenLaunchCompleted")) {
         throw new Error("Token launch has been completed. Trading is no longer available through the bonding curve.")

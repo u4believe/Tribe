@@ -100,7 +100,7 @@ export default function QuickTradeModal({
 
     try {
       if (mode === "buy") {
-        const minTokensOut = (Number.parseFloat(amount) * 0.98).toFixed(6)
+        const minTokensOut = (Number.parseFloat(amount) * 0.95).toFixed(6)
         console.log("[v0] Quick trade - Buying tokens:", {
           contractAddress: token.contractAddress,
           trustAmount,
