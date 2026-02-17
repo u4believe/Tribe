@@ -197,47 +197,20 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
           </div>
 
           <div className="absolute top-2 right-2 flex flex-col items-end gap-1 z-10">
-            {isAlpha && <Badge className="bg-accent/90 text-accent-foreground text-[8px] px-1.5 py-0.5 backdrop-blur-sm">Alpha</Badge>}
             {token.isCompleted && (
               <Badge className="bg-orange-600/90 text-white text-[8px] whitespace-nowrap px-1.5 py-0.5 backdrop-blur-sm">Done</Badge>
             )}
             {hasPortal && (
               <button
                 onClick={handleIntuitionClick}
-                className="flex items-center gap-0.5 text-[8px] font-bold text-yellow-300 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded hover:bg-black/60 transition-colors"
+                className="flex items-center gap-0.5 text-[9px] font-bold text-yellow-200 bg-black/50 backdrop-blur-sm px-2 py-1 rounded-md hover:bg-black/70 transition-colors border border-yellow-500/40"
               >
                 Portal <ExternalLink className="w-2.5 h-2.5" />
               </button>
             )}
           </div>
 
-          <div className="relative flex items-center justify-center pt-4 pb-2 px-3">
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-end gap-1.5 z-10">
-              <div className="text-right">
-                <span className={`text-[10px] md:text-xs font-bold block leading-tight ${
-                  hasPortal ? "text-yellow-200" : "text-white"
-                }`}>
-                  ${currentPrice.toFixed(6)}
-                </span>
-                <span className="text-[7px] md:text-[8px] text-white/50 uppercase tracking-wider">Price</span>
-              </div>
-              <div className="text-right">
-                <span className={`text-[10px] md:text-xs font-bold block leading-tight ${
-                  hasPortal ? "text-yellow-200" : "text-white"
-                }`}>
-                  {(liveMarketCap ?? token.marketCap ?? 0).toFixed(2)}
-                </span>
-                <span className="text-[7px] md:text-[8px] text-white/50 uppercase tracking-wider">Stock</span>
-              </div>
-              <div className={`text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                Number(priceChange) >= 0
-                  ? "text-green-300 bg-green-500/15"
-                  : "text-red-300 bg-red-500/15"
-              }`}>
-                {Number(priceChange) >= 0 ? "+" : ""}{priceChange}%
-              </div>
-            </div>
-
+          <div className="flex items-center pt-4 pb-2 px-3 gap-3">
             <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 flex-shrink-0 ${
               hasPortal
                 ? "border-yellow-400/60 shadow-[0_0_15px_rgba(218,165,32,0.3)]"
@@ -248,6 +221,36 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
                 alt={token.name}
                 className="w-full h-full object-cover"
               />
+            </div>
+
+            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+              <div className={`rounded-md px-2 py-1 ${hasPortal ? "bg-black/30" : "bg-white/5"}`}>
+                <span className={`text-[7px] md:text-[8px] uppercase tracking-wider block ${
+                  hasPortal ? "text-yellow-400/70" : "text-cyan-400/70"
+                }`}>Price</span>
+                <span className={`text-xs md:text-sm font-bold block leading-tight ${
+                  hasPortal ? "text-yellow-100" : "text-cyan-300"
+                }`}>
+                  ${currentPrice.toFixed(6)}
+                </span>
+              </div>
+              <div className={`rounded-md px-2 py-1 ${hasPortal ? "bg-black/30" : "bg-white/5"}`}>
+                <span className={`text-[7px] md:text-[8px] uppercase tracking-wider block ${
+                  hasPortal ? "text-yellow-400/70" : "text-cyan-400/70"
+                }`}>Stock</span>
+                <span className={`text-xs md:text-sm font-bold block leading-tight ${
+                  hasPortal ? "text-yellow-100" : "text-cyan-300"
+                }`}>
+                  {(liveMarketCap ?? token.marketCap ?? 0).toFixed(2)}
+                </span>
+              </div>
+              <div className={`text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-md text-center ${
+                Number(priceChange) >= 0
+                  ? "text-green-300 bg-green-500/20"
+                  : "text-red-300 bg-red-500/20"
+              }`}>
+                {Number(priceChange) >= 0 ? "+" : ""}{priceChange}%
+              </div>
             </div>
           </div>
 
@@ -309,11 +312,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
               onClick={handleBuyClick}
               size="sm"
               disabled={token.isCompleted || !isUnlocked}
-              className={`flex items-center justify-center gap-0.5 disabled:opacity-40 text-[9px] md:text-[10px] h-6 md:h-7 px-1 rounded-md ${
-                hasPortal
-                  ? "bg-yellow-600 hover:bg-yellow-500 text-black font-bold"
-                  : "bg-primary hover:bg-primary/90 text-primary-foreground"
-              }`}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center justify-center gap-0.5 disabled:opacity-40 text-[9px] md:text-[10px] h-6 md:h-7 px-1 rounded-md"
             >
               <ShoppingCart className="w-2.5 h-2.5" />
               Buy
@@ -322,7 +321,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
               onClick={handleSellClick}
               size="sm"
               disabled={token.isCompleted || !isUnlocked}
-              className="!bg-white/10 hover:!bg-white/20 !text-white flex items-center justify-center gap-0.5 disabled:opacity-40 text-[9px] md:text-[10px] h-6 md:h-7 px-1 rounded-md border border-white/10"
+              className="!bg-yellow-500 hover:!bg-yellow-400 !text-black font-bold flex items-center justify-center gap-0.5 disabled:opacity-40 text-[9px] md:text-[10px] h-6 md:h-7 px-1 rounded-md"
             >
               <TrendingDown className="w-2.5 h-2.5" />
               Sell
