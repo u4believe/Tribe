@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, ExternalLink, Lock, AlertTriangle } from "lucide-react"
+import { ArrowLeft, ExternalLink, Lock, AlertTriangle, Clock } from "lucide-react"
 import LivePriceChart from "@/components/live-price-chart"
 import TradePanel from "@/components/trade-panel"
 import { fetchAllTokens } from "@/lib/tokens"
@@ -169,6 +169,18 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
                 <p className="text-sm md:text-xl font-bold text-foreground">{formatLargeNumber(token.maxSupply)}</p>
               </div>
             </div>
+
+            {token.createdAt && (
+              <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                <span className="text-xs md:text-sm text-muted-foreground">Created</span>
+                <span className="text-xs md:text-sm font-medium text-foreground">
+                  {new Date(token.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                  {" at "}
+                  {new Date(token.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
+            )}
           </Card>
 
           <Card className="bg-card border-border p-3 md:p-6">
