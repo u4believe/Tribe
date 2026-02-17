@@ -572,6 +572,39 @@ export async function setFeePercent(newFeePercent: number) {
   }
 }
 
+export async function setSellSpreadPercent(newPercent: number) {
+  try {
+    console.log("[v0] setSellSpreadPercent - Setting default sell spread percent:", { newPercent })
+
+    const contract = await getContract()
+    const tx = await contract.setSellSpreadPercent(newPercent)
+    const receipt = await tx.wait()
+
+    console.log("[v0] setSellSpreadPercent - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to set sell spread percent:", error)
+    throw error
+  }
+}
+
+export async function setTokenSellSpread(tokenAddress: string, percent: number) {
+  try {
+    tokenAddress = formatAddress(tokenAddress)
+    console.log("[v0] setTokenSellSpread - Setting sell spread for token:", { tokenAddress, percent })
+
+    const contract = await getContract()
+    const tx = await contract.setTokenSellSpread(tokenAddress, percent)
+    const receipt = await tx.wait()
+
+    console.log("[v0] setTokenSellSpread - Success!")
+    return receipt
+  } catch (error) {
+    console.error("Failed to set token sell spread:", error)
+    throw error
+  }
+}
+
 export async function getUserTokenBalance(tokenAddress: string, userAddress: string) {
   try {
     const contract = await getContract()

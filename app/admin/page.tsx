@@ -20,6 +20,8 @@ import {
   setDefaultPostMigrationTransferFeePercent,
   transferOwnership,
   setFeePercent as setFeePercentContract,
+  setSellSpreadPercent,
+  setTokenSellSpread,
 } from "@/lib/contract-functions"
 
 export default function AdminPage() {
@@ -41,6 +43,9 @@ export default function AdminPage() {
   const [globalFeePercent, setGlobalFeePercent] = useState("")
   const [recoverSpreadToken, setRecoverSpreadToken] = useState("")
   const [newOwnerAddress, setNewOwnerAddress] = useState("")
+  const [defaultSpreadPercent, setDefaultSpreadPercent] = useState("")
+  const [tokenSpreadAddress, setTokenSpreadAddress] = useState("")
+  const [tokenSpreadPercent, setTokenSpreadPercent] = useState("")
   const [adminMessage, setAdminMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isDeletingInvalid, setIsDeletingInvalid] = useState(false)
@@ -262,6 +267,41 @@ export default function AdminPage() {
       await transferOwnership(newOwnerAddress)
       setAdminMessage("Ownership transferred successfully!")
       setNewOwnerAddress("")
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSetSellSpreadPercent = async () => {
+    if (!defaultSpreadPercent) {
+      setAdminMessage("Please enter a sell spread percent")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await setSellSpreadPercent(Number.parseInt(defaultSpreadPercent))
+      setAdminMessage("Default sell spread percent set successfully!")
+      setDefaultSpreadPercent("")
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSetTokenSellSpread = async () => {
+    if (!tokenSpreadAddress || !tokenSpreadPercent) {
+      setAdminMessage("Please enter token address and sell spread percent")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await setTokenSellSpread(tokenSpreadAddress, Number.parseInt(tokenSpreadPercent))
+      setAdminMessage("Token sell spread set successfully!")
+      setTokenSpreadAddress("")
+      setTokenSpreadPercent("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -651,6 +691,59 @@ export default function AdminPage() {
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Recover
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-green-300">Set Default Sell Spread Percent</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Set the default sell spread percentage applied to all new tokens.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Spread percent"
+                  value={defaultSpreadPercent}
+                  onChange={(e) => setDefaultSpreadPercent(e.target.value)}
+                  className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Button
+                  onClick={handleSetSellSpreadPercent}
+                  disabled={isLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Set
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-green-300">Set Token Sell Spread</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Set the sell spread percentage for a specific token.
+              </p>
+              <div className="flex gap-2 mb-3">
+                <Input
+                  type="text"
+                  placeholder="Token address"
+                  value={tokenSpreadAddress}
+                  onChange={(e) => setTokenSpreadAddress(e.target.value)}
+                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Input
+                  type="number"
+                  placeholder="Spread %"
+                  value={tokenSpreadPercent}
+                  onChange={(e) => setTokenSpreadPercent(e.target.value)}
+                  className="w-24 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Button
+                  onClick={handleSetTokenSellSpread}
+                  disabled={isLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Set
                 </Button>
               </div>
             </div>
