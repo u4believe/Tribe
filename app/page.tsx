@@ -391,6 +391,7 @@ export default function Home() {
               </div>
             </div>
           )}
+          <div className="pb-16" />
           <Footer />
           {showCreateModal && (
             <CreateTokenModal

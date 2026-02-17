@@ -180,7 +180,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
           </div>
 
           <div className="flex items-center pt-4 pb-2 px-3 gap-2">
-            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+            <div className="flex flex-col items-center justify-between flex-shrink-0 self-stretch py-1">
               <Button
                 variant="ghost"
                 size="sm"
