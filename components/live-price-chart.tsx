@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { getCurrentPrice, getTradeHistory, type TradeEvent } from "@/lib/contract-functions"
-import { createChart, type IChartApi, type ISeriesApi, type CandlestickData, ColorType } from "lightweight-charts"
+import { createChart, CandlestickSeries, type IChartApi, type ISeriesApi, type CandlestickData, ColorType } from "lightweight-charts"
 
 interface LivePriceChartProps {
   tokenAddress: string
@@ -167,7 +167,7 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
       height: 320,
     })
 
-    const candlestickSeries = chart.addCandlestickSeries({
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#00e676",
       downColor: "#ff1744",
       borderDownColor: "#ff1744",
