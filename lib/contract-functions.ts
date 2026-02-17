@@ -518,7 +518,7 @@ export async function emergencyWithdraw(tokenAddress: string) {
     console.log("[v0] emergencyWithdraw - Initiating emergency withdrawal:", { tokenAddress })
 
     const contract = await getContract()
-    const tx = await contract.emergencyWithdraw(tokenAddress)
+    const tx = await contract.emergencyWithdrawTokens(tokenAddress)
     const receipt = await tx.wait()
 
     console.log("[v0] emergencyWithdraw - Success!")
