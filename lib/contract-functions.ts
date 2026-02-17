@@ -24,6 +24,68 @@ function formatAddress(address: string): string {
   throw new Error(`Invalid address format: ${address}`)
 }
 
+const CUSTOM_ERRORS: Record<string, string> = {
+  "0x850c6f76": "SlippageTooHigh",
+  "0x36b63ffd": "SlippageTooHighSell",
+  "0x5d1ca88e": "Creator has reached the maximum buy limit for this token.",
+  "0xc30436e9": "This purchase would exceed the maximum token supply. Try buying a smaller amount.",
+  "0xfae7d962": "Token launch has been completed. Trading is no longer available through the bonding curve.",
+  "0xc242447c": "No tokens available to buy. Please enter a valid amount.",
+  "0x99c4b627": "Invalid purchase amount. Please enter a valid TRUST amount.",
+  "0xf4d678b8": "Insufficient TRUST balance. You need more TRUST tokens to complete this purchase.",
+  "0x5a8181f7": "Token is locked. The creator needs to buy more tokens to unlock trading.",
+  "0xc1ab6dc1": "Invalid token address.",
+  "0xb4fa3fb3": "Invalid input provided.",
+  "0x90b8ec18": "Transfer failed. Please try again.",
+  "0x42e4eb60": "No excess liquidity to recover for this token. The sell spread pool may be empty.",
+  "0xcfc82168": "Insufficient bonding curve liquidity.",
+  "0x1f77ff34": "Insufficient circulating supply.",
+  "0xe4455cae": "Insufficient token balance.",
+  "0x4db1ccc5": "Must sell tokens first.",
+  "0xb3fc2e39": "No tokens have been purchased yet.",
+  "0x30cd7471": "Only the contract owner can perform this action.",
+  "0x37ed32e8": "Reentrant call detected. Please try again.",
+  "0x6ac240bd": "Sell spread percentage exceeds the maximum allowed.",
+  "0xaf9c21dc": "Fee percentage exceeds the maximum allowed.",
+}
+
+function extractErrorSelector(err: any): string {
+  const paths = [
+    err?.data,
+    err?.info?.error?.data?.data,
+    err?.info?.error?.data,
+    err?.error?.data?.data,
+    err?.error?.data,
+  ]
+  for (const p of paths) {
+    if (typeof p === "string" && p.startsWith("0x") && p.length >= 10) {
+      return p.slice(0, 10)
+    }
+  }
+  const msg = err?.message || err?.toString() || ""
+  const match = msg.match(/data="(0x[0-9a-fA-F]{8,})"/)
+  if (match) return match[1].slice(0, 10)
+  return ""
+}
+
+function decodeContractError(error: any): string {
+  const selector = extractErrorSelector(error)
+  if (selector && CUSTOM_ERRORS[selector]) {
+    return CUSTOM_ERRORS[selector]
+  }
+  const msg = error?.message || error?.toString() || ""
+  if (msg.includes("user rejected")) {
+    return "Transaction was rejected by the user."
+  }
+  if (msg.includes("insufficient funds") || msg.includes("sender doesn't have enough")) {
+    return "Insufficient funds to complete this transaction."
+  }
+  if (msg.includes("execution reverted")) {
+    return `Transaction would fail: ${selector ? `error code ${selector}` : "unknown reason"}`
+  }
+  return ""
+}
+
 export async function createToken(name: string, symbol: string, metadata: string, spreadPercent: number = 0) {
   try {
     console.log("[v0] createToken - Starting token creation...")
@@ -119,40 +181,6 @@ export async function buyTokens(tokenAddress: string, trustAmount: string, minTo
     } else {
       minTokensOutWei = parseEther(minTokensOut)
       console.log("[v0] buyTokens - Minimum tokens out:", minTokensOut, "tokens")
-    }
-
-    const CUSTOM_ERRORS: Record<string, string> = {
-      "0x850c6f76": "SlippageTooHigh",
-      "0x36b63ffd": "SlippageTooHighSell",
-      "0x5d1ca88e": "Creator has reached the maximum buy limit for this token.",
-      "0xc30436e9": "This purchase would exceed the maximum token supply. Try buying a smaller amount.",
-      "0xfae7d962": "Token launch has been completed. Trading is no longer available through the bonding curve.",
-      "0xc242447c": "No tokens available to buy. Please enter a valid amount.",
-      "0x99c4b627": "Invalid purchase amount. Please enter a valid TRUST amount.",
-      "0xf4d678b8": "Insufficient TRUST balance. You need more TRUST tokens to complete this purchase.",
-      "0x5a8181f7": "Token is locked. The creator needs to buy more tokens to unlock trading.",
-      "0xc1ab6dc1": "Invalid token address.",
-      "0xb4fa3fb3": "Invalid input provided.",
-      "0x90b8ec18": "Transfer failed. Please try again.",
-    }
-
-    function extractErrorSelector(err: any): string {
-      const paths = [
-        err?.data,
-        err?.info?.error?.data?.data,
-        err?.info?.error?.data,
-        err?.error?.data?.data,
-        err?.error?.data,
-      ]
-      for (const p of paths) {
-        if (typeof p === "string" && p.startsWith("0x") && p.length >= 10) {
-          return p.slice(0, 10)
-        }
-      }
-      const msg = err?.message || err?.toString() || ""
-      const match = msg.match(/data="(0x[0-9a-fA-F]{8,})"/)
-      if (match) return match[1].slice(0, 10)
-      return ""
     }
 
     let gasEstimateOk = false
@@ -441,13 +469,28 @@ export async function recoverSellSpreadLiquidity(tokenAddress: string) {
     console.log("[v0] recoverSellSpreadLiquidity - Recovering sell spread liquidity:", { tokenAddress })
 
     const contract = await getContract()
+
+    try {
+      await contract.recoverSellSpreadLiquidity.estimateGas(tokenAddress)
+    } catch (gasError: any) {
+      console.error("[v0] recoverSellSpreadLiquidity - Gas estimation failed:", gasError)
+      const decoded = decodeContractError(gasError)
+      if (decoded) throw new Error(decoded)
+      throw gasError
+    }
+
     const tx = await contract.recoverSellSpreadLiquidity(tokenAddress)
     const receipt = await tx.wait()
 
     console.log("[v0] recoverSellSpreadLiquidity - Success!")
     return receipt
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to recover sell spread liquidity:", error)
+    if (error.message?.includes("user rejected")) {
+      throw new Error("Transaction was rejected by the user.")
+    }
+    const decoded = decodeContractError(error)
+    if (decoded) throw new Error(decoded)
     throw error
   }
 }
