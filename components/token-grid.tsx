@@ -28,7 +28,7 @@ export default function TokenGrid({
             <h2 className="text-lg md:text-2xl font-bold text-foreground mb-0.5">Tribe-Oriented</h2>
             <p className="text-[10px] md:text-sm text-muted-foreground">Tokens with Intuition knowledge graph</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {tribeOrientedTokens.map((token) => (
               <div key={token.id} className="alpha-glow rounded-xl" onMouseEnter={() => onTokenHover?.(token)}>
                 <TokenCard
@@ -50,7 +50,7 @@ export default function TokenGrid({
             <h2 className="text-lg md:text-2xl font-bold text-foreground mb-0.5">All Tokens</h2>
             <p className="text-[10px] md:text-sm text-muted-foreground">Discover new meme tokens</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {allTokens.map((token) => (
               <div key={token.id} className="alpha-glow rounded-xl" onMouseEnter={() => onTokenHover?.(token)}>
                 <TokenCard
