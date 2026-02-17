@@ -136,7 +136,7 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
       },
       grid: {
         vertLines: { color: "rgba(255, 255, 255, 0.04)" },
-        horzLines: { color: "rgba(255, 255, 255, 0.04)" },
+        horzLines: { color: "rgba(255, 255, 255, 0.06)" },
       },
       crosshair: {
         mode: 0,
@@ -155,7 +155,11 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
       },
       rightPriceScale: {
         borderColor: "rgba(255, 255, 255, 0.1)",
-        scaleMargins: { top: 0.1, bottom: 0.1 },
+        scaleMargins: { top: 0.05, bottom: 0.05 },
+        autoScale: true,
+        borderVisible: true,
+        ticksVisible: true,
+        entireTextOnly: false,
       },
       timeScale: {
         borderColor: "rgba(255, 255, 255, 0.1)",
@@ -164,7 +168,7 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
       },
       handleScroll: { vertTouchDrag: false },
       width: chartContainerRef.current.clientWidth,
-      height: 320,
+      height: 380,
     })
 
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
@@ -342,7 +346,7 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
         </div>
       </div>
 
-      <div className="relative w-full" style={{ height: 320 }}>
+      <div className="relative w-full" style={{ height: 380 }}>
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <span className="text-muted-foreground text-sm">Loading trade history...</span>
@@ -353,7 +357,7 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
 
       <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
         <span>{trades.length} trades</span>
-        <span>Updates every 10s</span>
+        <span>Updates every 30s</span>
       </div>
     </div>
   )
