@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ShoppingCart, TrendingDown, ExternalLink, Copy, Star, Lock, LockOpen } from "lucide-react"
@@ -147,117 +146,174 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
     }
   }
 
+  const hasPortal = token.intuitionLink && token.intuitionLink.trim() !== ""
+
   return (
     <>
-      <Card
-        className={`cursor-pointer hover:border-primary/50 transition-all hover:shadow-lg overflow-hidden min-w-[180px] ${
-          isAlpha ? "alpha-shimmer bg-card/80 border-accent/30" : "bg-card border-border"
-        } ${token.intuitionLink ? "border-white/50 shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] hover:border-white" : ""}`}
+      <div
+        className={`cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1 min-w-[180px] rounded-t-2xl rounded-b-lg overflow-hidden ${
+          hasPortal
+            ? "shadow-[0_0_20px_rgba(218,165,32,0.4)] hover:shadow-[0_0_30px_rgba(218,165,32,0.6)]"
+            : "shadow-lg hover:shadow-xl shadow-black/30"
+        }`}
         onClick={onClick}
       >
-        <div className="p-2 md:p-3 space-y-1 md:space-y-1.5">
-          {/* Token Header */}
-          <div className="flex items-center justify-between gap-1.5">
-            <div className="flex items-center gap-1.5 md:gap-2 flex-1 min-w-0">
-              <img
-                src={token.image || "/placeholder.svg"}
-                alt={token.name}
-                className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover flex-shrink-0"
-              />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-xs md:text-sm text-foreground truncate">{token.name}</h3>
-                <p className="text-[8px] md:text-[10px] text-muted-foreground truncate">${token.symbol}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-0.5 flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleStarClick}
-                disabled={isStarring || !address}
-                className={`h-5 w-5 p-0 hover:bg-muted ${isStarred ? "text-yellow-500" : "text-muted-foreground"}`}
-                title={isStarred ? "Unstar token" : "Star token"}
+        <div
+          className={`relative ${
+            hasPortal
+              ? "bg-gradient-to-b from-yellow-700/90 via-yellow-800/80 to-yellow-950/95 border border-yellow-500/50"
+              : "bg-gradient-to-b from-gray-700/90 via-gray-800/80 to-gray-900/95 border border-gray-600/40"
+          } rounded-t-2xl rounded-b-lg`}
+        >
+          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleStarClick}
+              disabled={isStarring || !address}
+              className={`h-6 w-6 p-0 rounded-full backdrop-blur-sm ${
+                isStarred
+                  ? "text-yellow-400 bg-yellow-400/20"
+                  : "text-white/60 bg-black/30 hover:text-yellow-400"
+              }`}
+              title={isStarred ? "Unstar token" : "Star token"}
+            >
+              <Star className={`w-3.5 h-3.5 ${isStarred ? "fill-current" : ""}`} />
+            </Button>
+            {!isCheckingLock && (
+              <div
+                className={`flex items-center justify-center h-6 w-6 rounded-full backdrop-blur-sm ${
+                  isUnlocked
+                    ? "bg-green-500/20 text-green-400"
+                    : "bg-red-500/20 text-red-400"
+                }`}
+                title={
+                  isUnlocked ? "Token unlocked - Available for trading" : "Token locked - Creator must buy 2% first"
+                }
               >
-                <Star className={`w-3 h-3 ${isStarred ? "fill-current" : ""}`} />
-              </Button>
-              {!isCheckingLock && (
-                <div
-                  className={`flex items-center justify-center h-5 w-5 rounded ${
-                    isUnlocked ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
-                  }`}
-                  title={
-                    isUnlocked ? "Token unlocked - Available for trading" : "Token locked - Creator must buy 2% first"
-                  }
-                >
-                  {isUnlocked ? <LockOpen className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                </div>
-              )}
-              {isAlpha && <Badge className="bg-accent text-accent-foreground text-[6px] px-0.5 py-0">Alpha</Badge>}
-              {token.isCompleted && (
-                <Badge className="bg-orange-600 text-white text-[6px] whitespace-nowrap px-0.5 py-0">Done</Badge>
-              )}
-            </div>
+                {isUnlocked ? <LockOpen className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+              </div>
+            )}
           </div>
 
-          {/* Contract Address and Portal link row */}
-          <div className="flex items-center justify-between gap-1 text-[8px] md:text-[9px]">
-            <div className="flex items-center gap-0.5 min-w-0 flex-1">
-              <span className="text-muted-foreground">CA:</span>
-              <span className="font-mono text-foreground truncate">{token.contractAddress.slice(0, 6)}...</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopyAddress}
-                className="h-4 w-4 p-0 hover:bg-muted flex-shrink-0"
-                title="Copy address"
-              >
-                <Copy className={`w-2 h-2 ${copied ? "text-green-500" : ""}`} />
-              </Button>
-            </div>
-            {token.intuitionLink && (
+          <div className="absolute top-2 right-2 flex flex-col items-end gap-1 z-10">
+            {isAlpha && <Badge className="bg-accent/90 text-accent-foreground text-[8px] px-1.5 py-0.5 backdrop-blur-sm">Alpha</Badge>}
+            {token.isCompleted && (
+              <Badge className="bg-orange-600/90 text-white text-[8px] whitespace-nowrap px-1.5 py-0.5 backdrop-blur-sm">Done</Badge>
+            )}
+            {hasPortal && (
               <button
                 onClick={handleIntuitionClick}
-                className="text-primary hover:underline flex items-center gap-0.5 font-medium flex-shrink-0"
+                className="flex items-center gap-0.5 text-[8px] font-bold text-yellow-300 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded hover:bg-black/60 transition-colors"
               >
-                <span>Portal</span>
-                <ExternalLink className="w-2 h-2" />
+                Portal <ExternalLink className="w-2.5 h-2.5" />
               </button>
             )}
           </div>
 
-          {/* Price and Stock row */}
-          <div className="flex items-center justify-between gap-1 text-[8px] md:text-[9px]">
-            <div className="flex items-center gap-0.5 min-w-0">
-              <span className="text-muted-foreground">Price:</span>
-              <span className="font-semibold text-foreground truncate">${currentPrice.toFixed(6)}</span>
+          <div className="relative flex items-center justify-center pt-4 pb-2 px-3">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-end gap-1.5 z-10">
+              <div className="text-right">
+                <span className={`text-[10px] md:text-xs font-bold block leading-tight ${
+                  hasPortal ? "text-yellow-200" : "text-white"
+                }`}>
+                  ${currentPrice.toFixed(6)}
+                </span>
+                <span className="text-[7px] md:text-[8px] text-white/50 uppercase tracking-wider">Price</span>
+              </div>
+              <div className="text-right">
+                <span className={`text-[10px] md:text-xs font-bold block leading-tight ${
+                  hasPortal ? "text-yellow-200" : "text-white"
+                }`}>
+                  {(liveMarketCap ?? token.marketCap ?? 0).toFixed(2)}
+                </span>
+                <span className="text-[7px] md:text-[8px] text-white/50 uppercase tracking-wider">Stock</span>
+              </div>
+              <div className={`text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                Number(priceChange) >= 0
+                  ? "text-green-300 bg-green-500/15"
+                  : "text-red-300 bg-red-500/15"
+              }`}>
+                {Number(priceChange) >= 0 ? "+" : ""}{priceChange}%
+              </div>
             </div>
-            <div className="flex items-center gap-0.5 min-w-0">
-              <span className="text-muted-foreground">Stock:</span>
-              <span className="font-semibold text-foreground truncate">{(liveMarketCap ?? token.marketCap ?? 0).toFixed(2)}</span>
-            </div>
-          </div>
 
-          {/* Bonding curve */}
-          <div className="flex items-center gap-1">
-            <span className="text-[8px] md:text-[9px] text-muted-foreground flex-shrink-0">Bonding:</span>
-            <div className="flex-1 bg-muted/30 rounded-full h-1">
-              <div
-                className="bg-gradient-to-r from-primary to-accent h-1 rounded-full transition-all duration-300"
-                style={{ width: `${bondingCurveProgress}%` }}
+            <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 flex-shrink-0 ${
+              hasPortal
+                ? "border-yellow-400/60 shadow-[0_0_15px_rgba(218,165,32,0.3)]"
+                : "border-white/20 shadow-[0_0_10px_rgba(0,0,0,0.3)]"
+            }`}>
+              <img
+                src={token.image || "/placeholder.svg"}
+                alt={token.name}
+                className="w-full h-full object-cover"
               />
             </div>
-            <span className="text-[8px] md:text-[9px] font-semibold text-accent flex-shrink-0">
-              {bondingCurveProgress.toFixed(0)}%
-            </span>
           </div>
 
-          {/* Buy/Sell buttons */}
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className={`mx-3 border-t ${hasPortal ? "border-yellow-500/30" : "border-white/10"}`} />
+
+          <div className="px-3 pt-2 pb-1 text-center">
+            <h3 className={`font-bold text-sm md:text-base truncate ${
+              hasPortal ? "text-yellow-100" : "text-white"
+            }`}>
+              {token.name}
+            </h3>
+            <p className={`text-[8px] md:text-[9px] mt-0.5 truncate ${
+              hasPortal ? "text-yellow-300/70" : "text-white/40"
+            }`}>
+              ${token.symbol}
+            </p>
+          </div>
+
+          <div className="px-3 pb-2 flex items-center justify-center gap-1">
+            <span className="text-[8px] md:text-[9px] font-mono text-white/40 truncate">
+              {token.contractAddress.slice(0, 6)}...{token.contractAddress.slice(-4)}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyAddress}
+              className="h-4 w-4 p-0 hover:bg-white/10 flex-shrink-0"
+              title="Copy address"
+            >
+              <Copy className={`w-2.5 h-2.5 ${copied ? "text-green-400" : "text-white/40"}`} />
+            </Button>
+          </div>
+
+          <div className="px-3 pb-2">
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[8px] md:text-[9px] flex-shrink-0 ${
+                hasPortal ? "text-yellow-300/60" : "text-white/40"
+              }`}>Bonding</span>
+              <div className={`flex-1 rounded-full h-1.5 ${hasPortal ? "bg-yellow-900/50" : "bg-white/10"}`}>
+                <div
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    hasPortal
+                      ? "bg-gradient-to-r from-yellow-500 to-yellow-300"
+                      : "bg-gradient-to-r from-primary to-accent"
+                  }`}
+                  style={{ width: `${bondingCurveProgress}%` }}
+                />
+              </div>
+              <span className={`text-[8px] md:text-[9px] font-bold flex-shrink-0 ${
+                hasPortal ? "text-yellow-300" : "text-accent"
+              }`}>
+                {bondingCurveProgress.toFixed(0)}%
+              </span>
+            </div>
+          </div>
+
+          <div className="px-3 pb-3 grid grid-cols-2 gap-1.5">
             <Button
               onClick={handleBuyClick}
               size="sm"
               disabled={token.isCompleted || !isUnlocked}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-0.5 disabled:opacity-50 text-[9px] md:text-[10px] h-5 md:h-6 px-1"
+              className={`flex items-center justify-center gap-0.5 disabled:opacity-40 text-[9px] md:text-[10px] h-6 md:h-7 px-1 rounded-md ${
+                hasPortal
+                  ? "bg-yellow-600 hover:bg-yellow-500 text-black font-bold"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground"
+              }`}
             >
               <ShoppingCart className="w-2.5 h-2.5" />
               Buy
@@ -266,7 +322,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
               onClick={handleSellClick}
               size="sm"
               disabled={token.isCompleted || !isUnlocked}
-              className="!bg-yellow-500 hover:!bg-yellow-600 !text-black flex items-center justify-center gap-0.5 disabled:opacity-50 text-[9px] md:text-[10px] h-5 md:h-6 px-1"
+              className="!bg-white/10 hover:!bg-white/20 !text-white flex items-center justify-center gap-0.5 disabled:opacity-40 text-[9px] md:text-[10px] h-6 md:h-7 px-1 rounded-md border border-white/10"
             >
               <TrendingDown className="w-2.5 h-2.5" />
               Sell
@@ -274,12 +330,12 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
           </div>
 
           {token.isCompleted && (
-            <p className="text-[7px] md:text-[8px] text-center text-orange-600 font-medium truncate">
+            <p className="text-[7px] md:text-[8px] text-center text-orange-400 font-medium pb-2 px-3">
               Trading stopped - Launch completed
             </p>
           )}
         </div>
-      </Card>
+      </div>
 
       {showTradeModal && (
         <QuickTradeModal
