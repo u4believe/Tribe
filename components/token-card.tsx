@@ -210,7 +210,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
               </div>
             </div>
 
-            <div className="flex flex-col gap-1 flex-shrink-0 w-[90px]">
+            <div className="flex flex-col gap-1 flex-shrink-0 w-[80px] md:w-[90px]">
               <div className={`rounded-md px-1.5 py-0.5 ${hasPortal ? "bg-black/30" : "bg-white/5"}`}>
                 <span className={`text-[6px] md:text-[7px] uppercase tracking-wider block ${
                   hasPortal ? "text-yellow-400/70" : "text-cyan-400/70"

@@ -230,7 +230,7 @@ export default function Home() {
         <div className="flex-1 md:ml-16">
           <Header onCreateClick={() => setShowCreateModal(true)} onAlphaClick={() => setShowAlphaRoom(true)} />
           {selectedToken ? (
-            <div className="pt-20 md:pt-24">
+            <div className="pt-16 md:pt-24">
               <BondingCurveView token={selectedToken} onBack={handleBackFromBondingCurve} />
             </div>
           ) : (
@@ -247,8 +247,8 @@ export default function Home() {
                   <div className="py-2 border-t border-border/30">
                     <TVTTicker />
                   </div>
-                  <div className="flex items-center gap-4 py-3 border-t border-border/30 lg:pr-[280px]">
-                    <div className="relative max-w-sm">
+                  <div className="flex items-center gap-2 md:gap-4 py-2 md:py-3 border-t border-border/30 lg:pr-[280px]">
+                    <div className="relative flex-1 sm:flex-none sm:max-w-sm">
                       <div className="absolute -inset-1.5 bg-gradient-to-r from-primary/40 via-primary/60 to-primary/40 rounded-xl blur-md opacity-75 animate-pulse" />
                       <div className="relative">
                         <input
@@ -324,7 +324,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <div className="container mx-auto px-2 md:px-4 py-4 pt-[230px] md:pt-[250px]">
+              <div className="container mx-auto px-2 md:px-4 py-4 pt-[200px] md:pt-[250px]">
                 <div className="lg:mr-[280px]">
                   {isLoading ? (
                     <div className="text-center py-8 md:py-12">
@@ -391,7 +391,7 @@ export default function Home() {
               </div>
             </div>
           )}
-          <div className="pb-16" />
+          <div className="pb-20 md:pb-16" />
           <Footer />
           {showCreateModal && (
             <CreateTokenModal

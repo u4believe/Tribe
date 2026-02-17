@@ -105,10 +105,10 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
   }, [token.contractAddress])
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Button variant="ghost" onClick={onBack} className="mb-6 text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Tokens
+    <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 pb-24 md:pb-8">
+      <Button variant="ghost" onClick={onBack} className="mb-4 md:mb-6 text-muted-foreground hover:text-foreground text-sm">
+        <ArrowLeft className="w-4 h-4 mr-1 md:mr-2" />
+        Back
       </Button>
 
       {!isCheckingLock && !isUnlocked && !token.isCompleted && (
@@ -128,19 +128,19 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-card border-border p-6">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          <Card className="bg-card border-border p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4 md:mb-6">
+              <div className="flex items-center gap-3 md:gap-4">
                 <img
                   src={token.image || "/placeholder.svg"}
                   alt={token.name}
-                  className="w-16 h-16 rounded-lg object-cover"
+                  className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover flex-shrink-0"
                 />
-                <div>
-                  <h1 className="text-3xl font-bold text-foreground">{token.name}</h1>
-                  <p className="text-lg text-muted-foreground">${token.symbol}</p>
+                <div className="min-w-0">
+                  <h1 className="text-xl md:text-3xl font-bold text-foreground truncate">{token.name}</h1>
+                  <p className="text-sm md:text-lg text-muted-foreground">${token.symbol}</p>
                 </div>
               </div>
               {token.intuitionLink && (
@@ -148,36 +148,36 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
                   href={token.intuitionLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500/20 text-yellow-400 font-semibold border border-yellow-500/40 hover:bg-yellow-500/30 transition-colors"
+                  className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-yellow-500/20 text-yellow-400 font-semibold border border-yellow-500/40 hover:bg-yellow-500/30 transition-colors text-sm self-start flex-shrink-0"
                 >
-                  Portal <ExternalLink className="w-4 h-4" />
+                  Portal <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </a>
               )}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 md:gap-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Current Price</p>
-                <p className="text-xl font-bold text-foreground">${(livePrice ?? token.currentPrice).toFixed(8)}</p>
+                <p className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">Current Price</p>
+                <p className="text-sm md:text-xl font-bold text-foreground">${(livePrice ?? token.currentPrice).toFixed(6)}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Trust Stock Value</p>
-                <p className="text-xl font-bold text-foreground">{(liveMarketCap ?? token.marketCap).toFixed(2)} TRUST</p>
+                <p className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">Stock Value</p>
+                <p className="text-sm md:text-xl font-bold text-foreground">{(liveMarketCap ?? token.marketCap).toFixed(2)}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Max Supply</p>
-                <p className="text-xl font-bold text-foreground">{formatLargeNumber(token.maxSupply)}</p>
+                <p className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">Max Supply</p>
+                <p className="text-sm md:text-xl font-bold text-foreground">{formatLargeNumber(token.maxSupply)}</p>
               </div>
             </div>
           </Card>
 
-          <Card className="bg-card border-border p-6">
-            <h2 className="text-xl font-bold text-foreground mb-4">Live Price</h2>
+          <Card className="bg-card border-border p-3 md:p-6">
+            <h2 className="text-lg md:text-xl font-bold text-foreground mb-3 md:mb-4">Live Price</h2>
             <LivePriceChart tokenAddress={token.contractAddress} initialPrice={livePrice ?? token.currentPrice} />
           </Card>
 
-          <Card className="bg-card border-border p-6">
-            <h2 className="text-xl font-bold text-foreground mb-4">Creator Information</h2>
+          <Card className="bg-card border-border p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-bold text-foreground mb-3 md:mb-4">Creator Information</h2>
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Creator Address</p>

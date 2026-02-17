@@ -34,6 +34,7 @@ A Next.js 15 web application for launching and trading meme tokens on a bonding 
 - **Contract ABI**: `lib/contract-abi.json` (updated 2026-02-16 with sell spread and recovery functions)
 
 ## Recent Changes
+- 2026-02-17: Mobile responsiveness overhaul - added bottom navigation bar for mobile (Home, DEX, Vote, Leaderboard, Docs), hidden desktop sidebar/footer on mobile, bottom-sheet trade modals, responsive token cards/filters/search, mobile-optimized bonding curve detail view with stacked layout
 - 2026-02-17: Replaced custom canvas candlestick chart with TradingView Lightweight Charts library (lightweight-charts v5.1.0) for professional charting with built-in crosshair, zoom, scroll, and OHLC tooltips
 - 2026-02-16: Replaced line chart with candlestick chart (OHLC) using blockchain trade events (TokensBought/TokensSold), added 1m/15m/1h/4h/24h timeframes, hover tooltips with OHLC data; token holders now fetched from blockchain events instead of empty Supabase table; hidden specific tokens by ID filter; updated contract ABI and address to new deployment (0xcDa22...FDD080), added optional sell spread percent to token creation, added recoverSellSpreadLiquidity to admin panel, separated all admin form inputs into independent state variables
 - 2026-02-15: Added admin panel contract management functions (collectAndSplitTransferFees, completeTokenLaunch, setDefaultPostMigrationTransferFeePercent, transferOwnership, setFeePercent, setCreatorTransferFee)

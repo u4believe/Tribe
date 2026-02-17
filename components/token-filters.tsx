@@ -64,7 +64,7 @@ export default function TokenFilters({ activeFilter, onFilterChange, starredCoun
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3 w-full">
+    <div className="flex flex-wrap gap-1.5 md:grid md:grid-cols-3 lg:grid-cols-6 md:gap-3 w-full">
       {filters.map((filter) => {
         const Icon = filter.icon
         const isActive = activeFilter === filter.id
@@ -74,7 +74,7 @@ export default function TokenFilters({ activeFilter, onFilterChange, starredCoun
             key={filter.id}
             onClick={() => onFilterChange(filter.id)}
             className={`
-              flex items-center justify-center gap-1.5 px-2 md:px-3 py-2 rounded-lg font-medium text-xs md:text-sm whitespace-nowrap transition-all
+              flex items-center justify-center gap-1 md:gap-1.5 px-2.5 md:px-3 py-1.5 md:py-2 rounded-full md:rounded-lg font-medium text-[10px] md:text-sm whitespace-nowrap transition-all
               ${filter.bgClass} ${filter.textClass}
               ${isActive ? filter.activeBorder : ""}
             `}
@@ -83,7 +83,7 @@ export default function TokenFilters({ activeFilter, onFilterChange, starredCoun
             <span className="hidden sm:inline">{filter.label}</span>
             <span className="sm:hidden">{filter.label.split(" ")[0]}</span>
             {filter.count !== undefined && filter.count > 0 && (
-              <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold bg-black/10">{filter.count}</span>
+              <span className="text-[9px] md:text-xs px-1 md:px-1.5 py-0.5 rounded-full font-semibold bg-black/10">{filter.count}</span>
             )}
           </button>
         )

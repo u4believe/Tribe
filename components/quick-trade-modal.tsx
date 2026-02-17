@@ -156,10 +156,10 @@ export default function QuickTradeModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <Card className="bg-card border-border w-full max-w-md">
-        <div className="p-6 border-b border-border flex items-center justify-between">
-          <h2 className="text-xl font-bold text-foreground">Trade {token.symbol}</h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-[80] p-0 sm:p-4">
+      <Card className="bg-card border-border w-full sm:max-w-md rounded-t-2xl sm:rounded-xl max-h-[90vh] overflow-y-auto">
+        <div className="p-4 md:p-6 border-b border-border flex items-center justify-between sticky top-0 bg-card z-10">
+          <h2 className="text-lg md:text-xl font-bold text-foreground">Trade {token.symbol}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
             <X className="w-5 h-5" />
           </button>
