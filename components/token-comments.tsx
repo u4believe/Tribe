@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useWallet } from "@/hooks/use-wallet"
 import { MessageSquare, Send } from "lucide-react"
 import { awardCommentPoints } from "@/lib/points-system"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserClient } from "@/lib/supabase/client"
 
 interface Comment {
   commenter: string
@@ -29,10 +29,7 @@ export default function TokenComments({ tokenAddress }: TokenCommentsProps) {
   const loadComments = async () => {
     try {
       setIsLoading(true)
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      )
+      const supabase = createBrowserClient()
 
       const { data, error } = await supabase
         .from("token_comments")
@@ -71,10 +68,7 @@ export default function TokenComments({ tokenAddress }: TokenCommentsProps) {
     try {
       setIsSubmitting(true)
 
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      )
+      const supabase = createBrowserClient()
 
       const { error } = await supabase.from("token_comments").insert({
         token_address: tokenAddress.toLowerCase(),
