@@ -18,10 +18,10 @@ interface Candle {
   trades: number
 }
 
-type TimeFrame = "1m" | "15m" | "1h" | "4h" | "24h"
+type TimeFrame = "5m" | "15m" | "1h" | "4h" | "24h"
 
 const TIMEFRAME_MS: Record<TimeFrame, number> = {
-  "1m": 60 * 1000,
+  "5m": 5 * 60 * 1000,
   "15m": 15 * 60 * 1000,
   "1h": 60 * 60 * 1000,
   "4h": 4 * 60 * 60 * 1000,
@@ -326,7 +326,7 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
           )}
         </div>
         <div className="flex gap-1">
-          {(["1m", "15m", "1h", "4h", "24h"] as const).map((tf) => (
+          {(["5m", "15m", "1h", "4h", "24h"] as const).map((tf) => (
             <button
               key={tf}
               onClick={() => setTimeFrame(tf)}
