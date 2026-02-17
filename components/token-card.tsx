@@ -151,7 +151,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
   return (
     <>
       <div
-        className={`cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1 min-w-[180px] rounded-t-2xl rounded-b-lg overflow-hidden ${
+        className={`cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1 rounded-t-2xl rounded-b-lg overflow-hidden ${
           hasPortal
             ? "shadow-[0_0_20px_rgba(218,165,32,0.4)] hover:shadow-[0_0_30px_rgba(218,165,32,0.6)]"
             : "shadow-lg hover:shadow-xl shadow-black/30"
