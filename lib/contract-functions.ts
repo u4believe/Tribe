@@ -122,8 +122,8 @@ export async function buyTokens(tokenAddress: string, trustAmount: string, minTo
     }
 
     const CUSTOM_ERRORS: Record<string, string> = {
-      "0x850c6f76": "Price changed too much during transaction (slippage too high). Try reducing the amount or try again shortly.",
-      "0x36b63ffd": "Price changed too much during sell (slippage too high). Try reducing the amount or try again shortly.",
+      "0x850c6f76": "SlippageTooHigh",
+      "0x36b63ffd": "SlippageTooHighSell",
       "0x5d1ca88e": "Creator has reached the maximum buy limit for this token.",
       "0xc30436e9": "This purchase would exceed the maximum token supply. Try buying a smaller amount.",
       "0xfae7d962": "Token launch has been completed. Trading is no longer available through the bonding curve.",
@@ -136,49 +136,63 @@ export async function buyTokens(tokenAddress: string, trustAmount: string, minTo
       "0x90b8ec18": "Transfer failed. Please try again.",
     }
 
+    function extractErrorSelector(err: any): string {
+      const paths = [
+        err?.data,
+        err?.info?.error?.data?.data,
+        err?.info?.error?.data,
+        err?.error?.data?.data,
+        err?.error?.data,
+      ]
+      for (const p of paths) {
+        if (typeof p === "string" && p.startsWith("0x") && p.length >= 10) {
+          return p.slice(0, 10)
+        }
+      }
+      const msg = err?.message || err?.toString() || ""
+      const match = msg.match(/data="(0x[0-9a-fA-F]{8,})"/)
+      if (match) return match[1].slice(0, 10)
+      return ""
+    }
+
+    let gasEstimateOk = false
     try {
       console.log("[v0] buyTokens - Estimating gas...")
       const gasEstimate = await contract.buyTokens.estimateGas(tokenAddress, minTokensOutWei, {
         value: parseEther(trustAmount),
       })
       console.log("[v0] buyTokens - Gas estimate:", gasEstimate.toString())
+      gasEstimateOk = true
     } catch (gasError: any) {
       console.error("[v0] buyTokens - Gas estimation failed:", gasError)
 
-      const errorData = gasError?.info?.error?.data?.data || gasError?.data || ""
-      const errorSelector = typeof errorData === "string" ? errorData.slice(0, 10) : ""
+      const errorSelector = extractErrorSelector(gasError)
+      console.log("[v0] buyTokens - Error selector:", errorSelector)
+      const decodedError = errorSelector ? CUSTOM_ERRORS[errorSelector] : undefined
 
-      if (errorSelector && CUSTOM_ERRORS[errorSelector]) {
-        throw new Error(CUSTOM_ERRORS[errorSelector])
+      if (decodedError === "SlippageTooHigh" || decodedError === "SlippageTooHighSell") {
+        console.log("[v0] buyTokens - Slippage error detected, retrying with no minimum tokens out...")
+        minTokensOutWei = toBigInt(0)
+      } else if (decodedError) {
+        throw new Error(decodedError)
+      } else {
+        const errorMessage = gasError.message || gasError.toString()
+
+        if (errorMessage.includes("SlippageTooHigh") || errorMessage.includes("0x850c6f76")) {
+          console.log("[v0] buyTokens - Slippage error from message, retrying with no minimum...")
+          minTokensOutWei = toBigInt(0)
+        } else if (errorMessage.includes("TokenLaunchCompleted")) {
+          throw new Error("Token launch has been completed. Trading is no longer available through the bonding curve.")
+        } else if (errorMessage.includes("insufficient funds") || errorMessage.includes("sender doesn't have enough")) {
+          throw new Error("Insufficient TRUST balance. You need more TRUST tokens to complete this purchase.")
+        } else if (errorMessage.includes("execution reverted")) {
+          throw new Error(
+            "Transaction would fail. Please check: you have enough TRUST, token exists, and launch is not completed.",
+          )
+        } else {
+          throw new Error(`Transaction validation failed: ${errorMessage}`)
+        }
       }
-
-      const errorMessage = gasError.message || gasError.toString()
-
-      if (errorMessage.includes("SlippageTooHigh")) {
-        throw new Error(
-          "Price changed too much during transaction. Try reducing the amount or try again shortly.",
-        )
-      } else if (errorMessage.includes("TokenLaunchCompleted")) {
-        throw new Error("Token launch has been completed. Trading is no longer available through the bonding curve.")
-      } else if (errorMessage.includes("CreatorBuyLimitExceeded")) {
-        throw new Error("Creator has reached the maximum buy limit for this token.")
-      } else if (errorMessage.includes("ExceedsMaxSupply")) {
-        throw new Error("This purchase would exceed the maximum token supply. Try buying a smaller amount.")
-      } else if (errorMessage.includes("MustSendETH") || errorMessage.includes("NoTokensToBuy")) {
-        throw new Error("Invalid purchase amount. Please enter a valid TRUST amount.")
-      } else if (errorMessage.includes("insufficient funds") || errorMessage.includes("sender doesn't have enough")) {
-        throw new Error("Insufficient TRUST balance. You need more TRUST tokens to complete this purchase.")
-      } else if (errorMessage.includes("execution reverted")) {
-        throw new Error(
-          "Transaction would fail. Please check: you have enough TRUST, token exists, and launch is not completed.",
-        )
-      } else if (errorMessage.includes("missing revert data")) {
-        throw new Error(
-          "Unable to complete transaction. Possible reasons: insufficient TRUST balance, slippage too high, or token launch completed. Please check your wallet balance and try again.",
-        )
-      }
-
-      throw new Error(`Transaction validation failed: ${errorMessage}`)
     }
 
     const tx = await contract.buyTokens(tokenAddress, minTokensOutWei, {
