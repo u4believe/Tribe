@@ -23,7 +23,7 @@ export default function TVTTicker() {
 
   useEffect(() => {
     loadTVTData()
-    const interval = setInterval(loadTVTData, 30000)
+    const interval = setInterval(loadTVTData, 120000)
     return () => clearInterval(interval)
   }, [])
 

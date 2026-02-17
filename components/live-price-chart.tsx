@@ -256,8 +256,8 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
     }
     fetchTradeHistory()
     fetchCurrentPrice()
-    const tradeInterval = setInterval(fetchTradeHistory, 30000)
-    const priceInterval = setInterval(fetchCurrentPrice, 10000)
+    const tradeInterval = setInterval(fetchTradeHistory, 60000)
+    const priceInterval = setInterval(fetchCurrentPrice, 30000)
     return () => {
       clearInterval(tradeInterval)
       clearInterval(priceInterval)

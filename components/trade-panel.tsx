@@ -62,7 +62,7 @@ export default function TradePanel({ token, onTradeComplete }: TradePanelProps) 
     fetchTrustBalance()
 
     // Refresh balance every 10 seconds
-    const interval = setInterval(fetchTrustBalance, 10000)
+    const interval = setInterval(fetchTrustBalance, 30000)
     return () => clearInterval(interval)
   }, [address])
 
