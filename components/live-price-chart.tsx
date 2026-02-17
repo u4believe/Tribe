@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { getCurrentPrice, getTradeHistory, type TradeEvent } from "@/lib/contract-functions"
+import { createChart, type IChartApi, type ISeriesApi, type CandlestickData, ColorType } from "lightweight-charts"
 
 interface LivePriceChartProps {
   tokenAddress: string
@@ -105,8 +106,16 @@ function buildCandles(trades: TradeEvent[], currentPrice: number, timeframe: Tim
   return candles
 }
 
+function formatPriceDisplay(price: number): string {
+  if (price === 0) return "$0.00"
+  if (price < 0.00001) return `$${price.toExponential(4)}`
+  return `$${price.toFixed(8)}`
+}
+
 export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LivePriceChartProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const chartContainerRef = useRef<HTMLDivElement>(null)
+  const chartRef = useRef<IChartApi | null>(null)
+  const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null)
   const [trades, setTrades] = useState<TradeEvent[]>([])
   const [currentPrice, setCurrentPrice] = useState(initialPrice)
   const [priceChange, setPriceChange] = useState(0)
@@ -115,18 +124,96 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
   const [hoveredCandle, setHoveredCandle] = useState<Candle | null>(null)
   const tradesRef = useRef<TradeEvent[]>([])
   const currentPriceRef = useRef(initialPrice)
-  const timeFrameRef = useRef<TimeFrame>("1h")
-  const hoveredCandleRef = useRef<Candle | null>(null)
-  const candlesRef = useRef<Candle[]>([])
-  const animFrameRef = useRef<number>(0)
 
   useEffect(() => {
-    timeFrameRef.current = timeFrame
-  }, [timeFrame])
+    if (!chartContainerRef.current) return
 
-  useEffect(() => {
-    hoveredCandleRef.current = hoveredCandle
-  }, [hoveredCandle])
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: "transparent" },
+        textColor: "rgba(255, 255, 255, 0.5)",
+        fontSize: 11,
+      },
+      grid: {
+        vertLines: { color: "rgba(255, 255, 255, 0.04)" },
+        horzLines: { color: "rgba(255, 255, 255, 0.04)" },
+      },
+      crosshair: {
+        mode: 0,
+        vertLine: {
+          color: "rgba(255, 255, 255, 0.2)",
+          width: 1,
+          style: 2,
+          labelBackgroundColor: "#1a1a2e",
+        },
+        horzLine: {
+          color: "rgba(255, 255, 255, 0.2)",
+          width: 1,
+          style: 2,
+          labelBackgroundColor: "#1a1a2e",
+        },
+      },
+      rightPriceScale: {
+        borderColor: "rgba(255, 255, 255, 0.1)",
+        scaleMargins: { top: 0.1, bottom: 0.1 },
+      },
+      timeScale: {
+        borderColor: "rgba(255, 255, 255, 0.1)",
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      handleScroll: { vertTouchDrag: false },
+      width: chartContainerRef.current.clientWidth,
+      height: 320,
+    })
+
+    const candlestickSeries = chart.addCandlestickSeries({
+      upColor: "#00e676",
+      downColor: "#ff1744",
+      borderDownColor: "#ff1744",
+      borderUpColor: "#00e676",
+      wickDownColor: "rgba(255, 23, 68, 0.6)",
+      wickUpColor: "rgba(0, 230, 118, 0.6)",
+    })
+
+    chartRef.current = chart
+    candlestickSeriesRef.current = candlestickSeries
+
+    chart.subscribeCrosshairMove((param) => {
+      if (!param || !param.time) {
+        setHoveredCandle(null)
+        return
+      }
+      const data = param.seriesData.get(candlestickSeries) as CandlestickData | undefined
+      if (data) {
+        setHoveredCandle({
+          time: typeof param.time === "number" ? param.time * 1000 : 0,
+          open: data.open,
+          high: data.high,
+          low: data.low,
+          close: data.close,
+          trades: 0,
+        })
+      } else {
+        setHoveredCandle(null)
+      }
+    })
+
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.applyOptions({ width: chartContainerRef.current.clientWidth })
+      }
+    }
+
+    window.addEventListener("resize", handleResize)
+
+    return () => {
+      window.removeEventListener("resize", handleResize)
+      chart.remove()
+      chartRef.current = null
+      candlestickSeriesRef.current = null
+    }
+  }, [])
 
   const fetchTradeHistory = useCallback(async () => {
     if (!tokenAddress || !tokenAddress.startsWith("0x") || tokenAddress.length !== 42) return
@@ -177,211 +264,26 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
     }
   }, [trades, currentPrice])
 
-  const drawChart = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
-    ctx.scale(dpr, dpr)
-
-    const width = rect.width
-    const height = rect.height
-    const padding = { top: 20, right: 70, bottom: 35, left: 10 }
-    const chartWidth = width - padding.left - padding.right
-    const chartHeight = height - padding.top - padding.bottom
-
-    ctx.clearRect(0, 0, width, height)
-
-    const candles = buildCandles(tradesRef.current, currentPriceRef.current, timeFrameRef.current)
-    candlesRef.current = candles
-
-    if (candles.length === 0) {
-      ctx.fillStyle = "rgba(255, 255, 255, 0.3)"
-      ctx.font = "14px sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillText("Loading trade history...", width / 2, height / 2)
-      return
-    }
-
-    const allHighs = candles.map((c) => c.high)
-    const allLows = candles.map((c) => c.low)
-    let minPrice = Math.min(...allLows)
-    let maxPrice = Math.max(...allHighs)
-
-    if (minPrice === maxPrice) {
-      minPrice *= 0.999
-      maxPrice *= 1.001
-    }
-
-    const priceRange = maxPrice - minPrice
-    const pricePad = priceRange * 0.1
-    minPrice -= pricePad
-    maxPrice += pricePad
-
-    const toY = (price: number) =>
-      padding.top + (1 - (price - minPrice) / (maxPrice - minPrice)) * chartHeight
-
-    const candleCount = candles.length
-    const candleTotalWidth = chartWidth / Math.max(candleCount, 1)
-    const candleBodyWidth = Math.max(Math.min(candleTotalWidth * 0.7, 20), 3)
-    const wickWidth = Math.max(1, candleBodyWidth < 6 ? 1 : 1.5)
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.05)"
-    ctx.lineWidth = 1
-    for (let i = 0; i <= 4; i++) {
-      const y = padding.top + (chartHeight / 4) * i
-      ctx.beginPath()
-      ctx.moveTo(padding.left, y)
-      ctx.lineTo(width - padding.right, y)
-      ctx.stroke()
-
-      const priceLabel = maxPrice - ((maxPrice - minPrice) / 4) * i
-      ctx.fillStyle = "rgba(255, 255, 255, 0.4)"
-      ctx.font = "10px sans-serif"
-      ctx.textAlign = "left"
-      ctx.fillText(formatPriceLabel(priceLabel), width - padding.right + 4, y + 3)
-    }
-
-    const timeLabelsShown = new Set<string>()
-    const maxLabels = Math.floor(chartWidth / 80)
-    const labelStep = Math.max(1, Math.floor(candleCount / maxLabels))
-
-    for (let i = 0; i < candleCount; i++) {
-      const candle = candles[i]
-      const x = padding.left + (i + 0.5) * candleTotalWidth
-      const isGreen = candle.close >= candle.open
-      const bodyColor = isGreen ? "#00e676" : "#ff1744"
-      const wickColor = isGreen ? "rgba(0, 230, 118, 0.6)" : "rgba(255, 23, 68, 0.6)"
-
-      const highY = toY(candle.high)
-      const lowY = toY(candle.low)
-      ctx.strokeStyle = wickColor
-      ctx.lineWidth = wickWidth
-      ctx.beginPath()
-      ctx.moveTo(x, highY)
-      ctx.lineTo(x, lowY)
-      ctx.stroke()
-
-      const openY = toY(candle.open)
-      const closeY = toY(candle.close)
-      const bodyTop = Math.min(openY, closeY)
-      const bodyHeight = Math.max(Math.abs(closeY - openY), 1)
-
-      ctx.fillStyle = bodyColor
-      ctx.fillRect(x - candleBodyWidth / 2, bodyTop, candleBodyWidth, bodyHeight)
-
-      if (i % labelStep === 0) {
-        const label = formatTimeLabel(candle.time, timeFrameRef.current)
-        if (!timeLabelsShown.has(label)) {
-          timeLabelsShown.add(label)
-          ctx.fillStyle = "rgba(255, 255, 255, 0.3)"
-          ctx.font = "9px sans-serif"
-          ctx.textAlign = "center"
-          ctx.fillText(label, x, height - padding.bottom + 15)
-        }
-      }
-    }
-
-    const hovered = hoveredCandleRef.current
-    if (hovered) {
-      const idx = candles.findIndex((c) => c.time === hovered.time)
-      if (idx >= 0) {
-        const x = padding.left + (idx + 0.5) * candleTotalWidth
-
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"
-        ctx.lineWidth = 1
-        ctx.setLineDash([4, 4])
-        ctx.beginPath()
-        ctx.moveTo(x, padding.top)
-        ctx.lineTo(x, padding.top + chartHeight)
-        ctx.stroke()
-        ctx.setLineDash([])
-
-        const tooltipLines = [
-          `O: ${formatPriceLabel(hovered.open)}`,
-          `H: ${formatPriceLabel(hovered.high)}`,
-          `L: ${formatPriceLabel(hovered.low)}`,
-          `C: ${formatPriceLabel(hovered.close)}`,
-        ]
-
-        const tooltipX = x + candleTotalWidth / 2 + 8
-        const tooltipY = padding.top + 5
-        const tooltipW = 130
-        const tooltipH = 72
-
-        const adjustedX = tooltipX + tooltipW > width - padding.right ? x - candleTotalWidth / 2 - tooltipW - 8 : tooltipX
-
-        ctx.fillStyle = "rgba(20, 20, 30, 0.9)"
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)"
-        ctx.lineWidth = 1
-        ctx.beginPath()
-        ctx.roundRect(adjustedX, tooltipY, tooltipW, tooltipH, 6)
-        ctx.fill()
-        ctx.stroke()
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.8)"
-        ctx.font = "11px monospace"
-        ctx.textAlign = "left"
-        tooltipLines.forEach((line, li) => {
-          ctx.fillText(line, adjustedX + 8, tooltipY + 18 + li * 15)
-        })
-      }
-    }
-  }, [])
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current
-      if (!canvas) return
-
-      const rect = canvas.getBoundingClientRect()
-      const mouseX = e.clientX - rect.left
-      const width = rect.width
-      const padding = { left: 10, right: 70 }
-      const chartWidth = width - padding.left - padding.right
-
-      const candles = candlesRef.current
-      if (candles.length === 0) return
-
-      const candleTotalWidth = chartWidth / candles.length
-      const idx = Math.floor((mouseX - padding.left) / candleTotalWidth)
-
-      if (idx >= 0 && idx < candles.length) {
-        setHoveredCandle(candles[idx])
-      } else {
-        setHoveredCandle(null)
-      }
-    },
-    []
-  )
-
-  const handleMouseLeave = useCallback(() => {
-    setHoveredCandle(null)
-  }, [])
-
   useEffect(() => {
-    const animate = () => {
-      drawChart()
-      animFrameRef.current = requestAnimationFrame(animate)
-    }
-    animFrameRef.current = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animFrameRef.current)
-  }, [drawChart])
+    if (!candlestickSeriesRef.current) return
 
-  useEffect(() => {
-    const handleResize = () => drawChart()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [drawChart])
+    const candles = buildCandles(tradesRef.current, currentPriceRef.current, timeFrame)
 
-  const displayCandle = hoveredCandle || null
-  const displayPrice = displayCandle ? displayCandle.close : currentPrice
+    if (candles.length === 0) return
+
+    const chartData: CandlestickData[] = candles.map((c) => ({
+      time: (Math.floor(c.time / 1000)) as CandlestickData["time"],
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }))
+
+    candlestickSeriesRef.current.setData(chartData)
+    chartRef.current?.timeScale().fitContent()
+  }, [trades, currentPrice, timeFrame])
+
+  const displayPrice = hoveredCandle ? hoveredCandle.close : currentPrice
 
   return (
     <div className="w-full">
@@ -434,17 +336,11 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
 
       <div className="relative w-full" style={{ height: 320 }}>
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center z-10">
             <span className="text-muted-foreground text-sm">Loading trade history...</span>
           </div>
         )}
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full cursor-crosshair"
-          style={{ width: "100%", height: "100%" }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-        />
+        <div ref={chartContainerRef} className="w-full h-full" />
       </div>
 
       <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
@@ -453,29 +349,4 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
       </div>
     </div>
   )
-}
-
-function formatPriceLabel(price: number): string {
-  if (price === 0) return "$0"
-  if (price < 0.00001) return `$${price.toExponential(3)}`
-  if (price < 0.001) return `$${price.toFixed(8)}`
-  if (price < 1) return `$${price.toFixed(6)}`
-  return `$${price.toFixed(4)}`
-}
-
-function formatPriceDisplay(price: number): string {
-  if (price === 0) return "$0.00"
-  if (price < 0.00001) return `$${price.toExponential(4)}`
-  return `$${price.toFixed(8)}`
-}
-
-function formatTimeLabel(timestamp: number, timeframe: TimeFrame): string {
-  const d = new Date(timestamp)
-  if (timeframe === "1m" || timeframe === "15m") {
-    return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`
-  }
-  if (timeframe === "1h" || timeframe === "4h") {
-    return `${(d.getMonth() + 1)}/${d.getDate()} ${d.getHours().toString().padStart(2, "0")}:00`
-  }
-  return `${(d.getMonth() + 1)}/${d.getDate()}`
 }
