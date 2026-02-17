@@ -165,38 +165,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
               : "bg-gradient-to-b from-gray-700/90 via-gray-800/80 to-gray-900/95 border border-gray-600/40"
           } rounded-t-2xl rounded-b-lg`}
         >
-          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleStarClick}
-              disabled={isStarring || !address}
-              className={`h-6 w-6 p-0 rounded-full backdrop-blur-sm ${
-                isStarred
-                  ? "text-yellow-400 bg-yellow-400/20"
-                  : "text-white/60 bg-black/30 hover:text-yellow-400"
-              }`}
-              title={isStarred ? "Unstar token" : "Star token"}
-            >
-              <Star className={`w-3.5 h-3.5 ${isStarred ? "fill-current" : ""}`} />
-            </Button>
-            {!isCheckingLock && (
-              <div
-                className={`flex items-center justify-center h-6 w-6 rounded-full backdrop-blur-sm ${
-                  isUnlocked
-                    ? "bg-green-500/20 text-green-400"
-                    : "bg-red-500/20 text-red-400"
-                }`}
-                title={
-                  isUnlocked ? "Token unlocked - Available for trading" : "Token locked - Creator must buy 2% first"
-                }
-              >
-                {isUnlocked ? <LockOpen className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-              </div>
-            )}
-          </div>
-
-          <div className="absolute top-2 right-2 flex flex-col items-end gap-1 z-10">
+          <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
             {token.isCompleted && (
               <Badge className="bg-orange-600/90 text-white text-[8px] whitespace-nowrap px-1.5 py-0.5 backdrop-blur-sm">Done</Badge>
             )}
@@ -210,41 +179,74 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
             )}
           </div>
 
-          <div className="flex items-center pt-4 pb-2 px-3 gap-3">
-            <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 flex-shrink-0 ${
-              hasPortal
-                ? "border-yellow-400/60 shadow-[0_0_15px_rgba(218,165,32,0.3)]"
-                : "border-white/20 shadow-[0_0_10px_rgba(0,0,0,0.3)]"
-            }`}>
-              <img
-                src={token.image || "/placeholder.svg"}
-                alt={token.name}
-                className="w-full h-full object-cover"
-              />
+          <div className="flex items-center pt-4 pb-2 px-3 gap-2">
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleStarClick}
+                disabled={isStarring || !address}
+                className={`h-6 w-6 p-0 rounded-full backdrop-blur-sm ${
+                  isStarred
+                    ? "text-yellow-400 bg-yellow-400/20"
+                    : "text-white/60 bg-black/30 hover:text-yellow-400"
+                }`}
+                title={isStarred ? "Unstar token" : "Star token"}
+              >
+                <Star className={`w-3.5 h-3.5 ${isStarred ? "fill-current" : ""}`} />
+              </Button>
+              {!isCheckingLock && (
+                <div
+                  className={`flex items-center justify-center h-6 w-6 rounded-full backdrop-blur-sm ${
+                    isUnlocked
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-red-500/20 text-red-400"
+                  }`}
+                  title={
+                    isUnlocked ? "Token unlocked - Available for trading" : "Token locked - Creator must buy 2% first"
+                  }
+                >
+                  {isUnlocked ? <LockOpen className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                </div>
+              )}
             </div>
 
-            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-              <div className={`rounded-md px-2 py-1 ${hasPortal ? "bg-black/30" : "bg-white/5"}`}>
-                <span className={`text-[7px] md:text-[8px] uppercase tracking-wider block ${
+            <div className="flex-1 flex justify-center">
+              <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 flex-shrink-0 ${
+                hasPortal
+                  ? "border-yellow-400/60 shadow-[0_0_15px_rgba(218,165,32,0.3)]"
+                  : "border-white/20 shadow-[0_0_10px_rgba(0,0,0,0.3)]"
+              }`}>
+                <img
+                  src={token.image || "/placeholder.svg"}
+                  alt={token.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1 flex-shrink-0 w-[90px]">
+              <div className={`rounded-md px-1.5 py-0.5 ${hasPortal ? "bg-black/30" : "bg-white/5"}`}>
+                <span className={`text-[6px] md:text-[7px] uppercase tracking-wider block ${
                   hasPortal ? "text-yellow-400/70" : "text-cyan-400/70"
                 }`}>Price</span>
-                <span className={`text-xs md:text-sm font-bold block leading-tight ${
+                <span className={`text-[10px] md:text-xs font-bold block leading-tight ${
                   hasPortal ? "text-yellow-100" : "text-cyan-300"
                 }`}>
                   ${currentPrice.toFixed(6)}
                 </span>
               </div>
-              <div className={`rounded-md px-2 py-1 ${hasPortal ? "bg-black/30" : "bg-white/5"}`}>
-                <span className={`text-[7px] md:text-[8px] uppercase tracking-wider block ${
+              <div className={`rounded-md px-1.5 py-0.5 ${hasPortal ? "bg-black/30" : "bg-white/5"}`}>
+                <span className={`text-[6px] md:text-[7px] uppercase tracking-wider block ${
                   hasPortal ? "text-yellow-400/70" : "text-cyan-400/70"
                 }`}>Stock</span>
-                <span className={`text-xs md:text-sm font-bold block leading-tight ${
+                <span className={`text-[10px] md:text-xs font-bold block leading-tight ${
                   hasPortal ? "text-yellow-100" : "text-cyan-300"
                 }`}>
                   {(liveMarketCap ?? token.marketCap ?? 0).toFixed(2)}
                 </span>
               </div>
-              <div className={`text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-md text-center ${
+              <div className={`text-[8px] md:text-[9px] font-bold px-1.5 py-0.5 rounded-md text-center ${
                 Number(priceChange) >= 0
                   ? "text-green-300 bg-green-500/20"
                   : "text-red-300 bg-red-500/20"
