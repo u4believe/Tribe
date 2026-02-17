@@ -143,9 +143,21 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
                   <p className="text-lg text-muted-foreground">${token.symbol}</p>
                 </div>
               </div>
-              {token.isAlpha && (
-                <div className="px-4 py-2 rounded-lg bg-accent/20 text-accent font-semibold">✨ Alpha</div>
-              )}
+              <div className="flex items-center gap-2">
+                {token.intuitionLink && (
+                  <a
+                    href={token.intuitionLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500/20 text-yellow-400 font-semibold border border-yellow-500/40 hover:bg-yellow-500/30 transition-colors"
+                  >
+                    Portal <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+                {token.isAlpha && (
+                  <div className="px-4 py-2 rounded-lg bg-accent/20 text-accent font-semibold">✨ Alpha</div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

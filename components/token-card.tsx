@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, TrendingDown, ExternalLink, Copy, Star, Lock, LockOpen } from "lucide-react"
+import { ShoppingCart, TrendingDown, Copy, Star, Lock, LockOpen } from "lucide-react"
 import { calculateBondingCurveProgress } from "@/lib/bonding-curve"
 import QuickTradeModal from "./quick-trade-modal"
 import { toggleStarToken, isTokenStarred } from "@/lib/starred-tokens"
@@ -110,13 +110,6 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleIntuitionClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (token.intuitionLink) {
-      window.open(token.intuitionLink, "_blank", "noopener,noreferrer")
-    }
-  }
-
   const handleTradeComplete = () => {
     if (onTradeComplete) {
       onTradeComplete()
@@ -168,14 +161,6 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
           <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
             {token.isCompleted && (
               <Badge className="bg-orange-600/90 text-white text-[8px] whitespace-nowrap px-1.5 py-0.5 backdrop-blur-sm">Done</Badge>
-            )}
-            {hasPortal && (
-              <button
-                onClick={handleIntuitionClick}
-                className="flex items-center gap-0.5 text-[9px] font-bold text-yellow-200 bg-black/50 backdrop-blur-sm px-2 py-1 rounded-md hover:bg-black/70 transition-colors border border-yellow-500/40"
-              >
-                Portal <ExternalLink className="w-2.5 h-2.5" />
-              </button>
             )}
           </div>
 
