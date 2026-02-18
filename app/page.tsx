@@ -190,37 +190,6 @@ export default function Home() {
 
   const filteredTokens = getFilteredTokens()
 
-  const formatTimeAgo = (dateString: string | undefined) => {
-    if (!dateString) return "N/A"
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
-    return `${diffDays}d ago`
-  }
-
-  const getTokenStats = () => {
-    if (!hoveredToken) return { totalHolders: 0, topHolderPercent: "0%", lastCreated: "N/A" }
-
-    const totalHolders = hoveredToken.holders || 0
-    const maxSupply = hoveredToken.maxSupply || 1000000000
-    const currentSupply = hoveredToken.currentSupply || 0
-    const topHolderEstimate = currentSupply > 0 ? Math.min(100, Math.round((currentSupply / maxSupply) * 100 * 0.4)) : 0
-
-    return {
-      totalHolders,
-      topHolderPercent: `${topHolderEstimate}%`,
-      lastCreated: formatTimeAgo(hoveredToken.createdAt),
-    }
-  }
-
-  const tokenStats = getTokenStats()
-
   return (
     <>
       {showSplash && splashReady && <WelcomeSplash onEnter={handleSplashEnter} />}
@@ -295,29 +264,8 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <div className="hidden lg:block fixed right-4 top-[220px] md:top-[240px] w-[260px] z-40">
-                <div className="space-y-3">
-                  <div className="border border-border rounded-lg p-3 bg-card/50">
-                    <h3 className="text-xs font-semibold text-foreground mb-2">Token Stats</h3>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-muted-foreground">Total Holders</span>
-                        <span className="font-semibold text-foreground">{tokenStats.totalHolders}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-muted-foreground">Top Holder</span>
-                        <span className="font-semibold text-purple-400">{tokenStats.topHolderPercent}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-muted-foreground">Last Created</span>
-                        <span className="font-semibold text-green-400">{tokenStats.lastCreated}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
               <div className="container mx-auto px-2 md:px-4 py-4 pt-[200px] md:pt-[250px]">
-                <div className="lg:mr-[280px]">
+                <div>
                   {isLoading ? (
                     <div className="text-center py-8 md:py-12">
                       <p className="text-sm md:text-base text-muted-foreground">Loading tokens...</p>
@@ -354,29 +302,6 @@ export default function Home() {
                       onStarToggle={handleStarToggle}
                       onTokenHover={handleTokenHover}
                     />
-                  )}
-                </div>
-                <div className="lg:hidden mt-6">
-                  {hoveredToken && (
-                    <div className="space-y-3">
-                      <div className="border border-border rounded-lg p-3 bg-card/50">
-                        <h3 className="text-xs font-semibold text-foreground mb-2">Token Stats</h3>
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-muted-foreground">Total Holders</span>
-                            <span className="font-semibold text-foreground">{tokenStats.totalHolders}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-muted-foreground">Top Holder</span>
-                            <span className="font-semibold text-purple-400">{tokenStats.topHolderPercent}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-muted-foreground">Last Created</span>
-                            <span className="font-semibold text-green-400">{tokenStats.lastCreated}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   )}
                 </div>
               </div>
