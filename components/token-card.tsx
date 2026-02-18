@@ -197,7 +197,7 @@ export default function TokenCard({ token, onClick, isAlpha, onTradeComplete, on
             </div>
 
             <div className="flex-1 flex justify-center">
-              <div className={`w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-2 flex-shrink-0 ${
+              <div className={`w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-2 flex-shrink-0 ${
                 hasPortal
                   ? "border-yellow-400/60 shadow-[0_0_15px_rgba(218,165,32,0.3)]"
                   : "border-white/20 shadow-[0_0_10px_rgba(0,0,0,0.3)]"
