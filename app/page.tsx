@@ -14,7 +14,6 @@ import { useWallet } from "@/hooks/use-wallet"
 import type { MemeToken } from "@/lib/tokens"
 import TVTTicker from "@/components/tvt-ticker"
 import WelcomeSplash from "@/components/welcome-splash"
-import { HexagonalRating } from "@/components/hexagonal-rating"
 
 export default function Home() {
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -298,13 +297,6 @@ export default function Home() {
               </div>
               <div className="hidden lg:block fixed right-4 top-[220px] md:top-[240px] w-[260px] z-40">
                 <div className="space-y-3">
-                  {hoveredToken ? (
-                    <HexagonalRating token={hoveredToken} />
-                  ) : (
-                    <div className="border border-border rounded-lg p-3 bg-card/50 text-center">
-                      <p className="text-muted-foreground text-xs">Hover over a token to see its rating</p>
-                    </div>
-                  )}
                   <div className="border border-border rounded-lg p-3 bg-card/50">
                     <h3 className="text-xs font-semibold text-foreground mb-2">Token Stats</h3>
                     <div className="space-y-1.5">
@@ -367,7 +359,6 @@ export default function Home() {
                 <div className="lg:hidden mt-6">
                   {hoveredToken && (
                     <div className="space-y-3">
-                      <HexagonalRating token={hoveredToken} />
                       <div className="border border-border rounded-lg p-3 bg-card/50">
                         <h3 className="text-xs font-semibold text-foreground mb-2">Token Stats</h3>
                         <div className="space-y-1.5">

@@ -14,7 +14,6 @@ import TokenComments from "@/components/token-comments"
 import TokenHolders from "@/components/token-holders"
 import { isTokenUnlocked, getTokenInfo, getCurrentPrice } from "@/lib/contract-functions"
 import { formatEther } from "ethers"
-import { HexagonalRating } from "@/components/hexagonal-rating"
 
 interface BondingCurveViewProps {
   token: (typeof mockTokens)[0]
@@ -219,9 +218,6 @@ export default function BondingCurveView({ token: initialToken, onBack }: Bondin
 
         <div>
           <TradePanel token={token} onTradeComplete={handleTradeComplete} />
-          <div className="mt-6">
-            <HexagonalRating token={token} />
-          </div>
         </div>
       </div>
     </div>
