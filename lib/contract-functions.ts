@@ -529,6 +529,8 @@ export async function emergencyWithdraw(tokenAddress: string) {
   }
 }
 
+export const emergencyWithdrawTokens = emergencyWithdraw
+
 export async function setDexRouter(routerAddress: string) {
   try {
     routerAddress = formatAddress(routerAddress)

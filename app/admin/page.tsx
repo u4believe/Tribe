@@ -10,12 +10,9 @@ import { useWallet } from "@/hooks/use-wallet"
 import { isAdmin } from "@/lib/admin-config"
 import { importTokensFromContract } from "@/lib/contract-import"
 import {
-  setCreatorTransferFee,
   recoverSellSpreadLiquidity,
-  emergencyWithdraw,
+  emergencyWithdrawTokens,
   setDexRouter,
-  getTokenInfo,
-  collectAndSplitTransferFees,
   completeTokenLaunch,
   setDefaultPostMigrationTransferFeePercent,
   transferOwnership,
@@ -32,20 +29,16 @@ export default function AdminPage() {
   const { address } = useWallet()
   const userIsAdmin = isAdmin(address)
 
-  const [creatorFeeToken, setCreatorFeeToken] = useState("")
-  const [creatorFeePercent, setCreatorFeePercent] = useState("")
-  const [emergencyToken, setEmergencyToken] = useState("")
-  const [routerAddress, setRouterAddress] = useState("")
-  const [infoToken, setInfoToken] = useState("")
-  const [collectFeesToken, setCollectFeesToken] = useState("")
-  const [completeLaunchToken, setCompleteLaunchToken] = useState("")
-  const [postMigrationFee, setPostMigrationFee] = useState("")
-  const [globalFeePercent, setGlobalFeePercent] = useState("")
-  const [recoverSpreadToken, setRecoverSpreadToken] = useState("")
   const [newOwnerAddress, setNewOwnerAddress] = useState("")
+  const [routerAddress, setRouterAddress] = useState("")
+  const [globalFeePercent, setGlobalFeePercent] = useState("")
+  const [postMigrationFee, setPostMigrationFee] = useState("")
   const [defaultSpreadPercent, setDefaultSpreadPercent] = useState("")
   const [tokenSpreadAddress, setTokenSpreadAddress] = useState("")
   const [tokenSpreadPercent, setTokenSpreadPercent] = useState("")
+  const [emergencyToken, setEmergencyToken] = useState("")
+  const [recoverSpreadToken, setRecoverSpreadToken] = useState("")
+  const [completeLaunchToken, setCompleteLaunchToken] = useState("")
   const [adminMessage, setAdminMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isDeletingInvalid, setIsDeletingInvalid] = useState(false)
@@ -93,34 +86,24 @@ export default function AdminPage() {
     )
   }
 
-  const handleSetCreatorTransferFee = async () => {
-    if (!creatorFeeToken || !creatorFeePercent) {
-      setAdminMessage("Please enter token address and fee percent")
+  const handleTransferOwnership = async () => {
+    if (!newOwnerAddress) {
+      setAdminMessage("Please enter new owner address")
+      return
+    }
+    if (!confirm("WARNING: This will transfer contract ownership to a new address. Are you absolutely sure?")) {
+      return
+    }
+    const confirmation = prompt("Type TRANSFER to confirm ownership transfer:")
+    if (confirmation !== "TRANSFER") {
+      setAdminMessage("Ownership transfer cancelled")
       return
     }
     setIsLoading(true)
     try {
-      await setCreatorTransferFee(creatorFeeToken, Number.parseInt(creatorFeePercent))
-      setAdminMessage("Creator transfer fee set successfully!")
-      setCreatorFeeToken("")
-      setCreatorFeePercent("")
-    } catch (error) {
-      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleEmergencyWithdraw = async () => {
-    if (!emergencyToken) {
-      setAdminMessage("Please enter token address")
-      return
-    }
-    setIsLoading(true)
-    try {
-      await emergencyWithdraw(emergencyToken)
-      setAdminMessage("Emergency withdrawal successful!")
-      setEmergencyToken("")
+      await transferOwnership(newOwnerAddress)
+      setAdminMessage("Ownership transferred successfully!")
+      setNewOwnerAddress("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -145,76 +128,6 @@ export default function AdminPage() {
     }
   }
 
-  const handleGetTokenInfo = async () => {
-    if (!infoToken) {
-      setAdminMessage("Please enter token address")
-      return
-    }
-    setIsLoading(true)
-    try {
-      const info = await getTokenInfo(infoToken)
-      setAdminMessage(`Token Info: Created by ${info.creator}, Completed: ${info.completed}`)
-    } catch (error) {
-      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleCollectFees = async () => {
-    if (!collectFeesToken) {
-      setAdminMessage("Please enter token address")
-      return
-    }
-    setIsLoading(true)
-    try {
-      await collectAndSplitTransferFees(collectFeesToken)
-      setAdminMessage("Transfer fees collected and split successfully!")
-      setCollectFeesToken("")
-    } catch (error) {
-      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleCompleteTokenLaunch = async () => {
-    if (!completeLaunchToken) {
-      setAdminMessage("Please enter token address")
-      return
-    }
-    if (!confirm("Are you sure you want to complete this token launch? This action cannot be undone.")) {
-      return
-    }
-    setIsLoading(true)
-    try {
-      await completeTokenLaunch(completeLaunchToken)
-      setAdminMessage("Token launch completed successfully!")
-      setCompleteLaunchToken("")
-    } catch (error) {
-      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleSetTransferFee = async () => {
-    if (!postMigrationFee) {
-      setAdminMessage("Please enter fee percent")
-      return
-    }
-    setIsLoading(true)
-    try {
-      await setDefaultPostMigrationTransferFeePercent(Number.parseInt(postMigrationFee))
-      setAdminMessage("Default post-migration transfer fee set successfully!")
-      setPostMigrationFee("")
-    } catch (error) {
-      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   const handleSetFeePercent = async () => {
     if (!globalFeePercent) {
       setAdminMessage("Please enter fee percent")
@@ -232,41 +145,16 @@ export default function AdminPage() {
     }
   }
 
-  const handleRecoverSellSpreadLiquidity = async () => {
-    if (!recoverSpreadToken) {
-      setAdminMessage("Please enter token address")
+  const handleSetTransferFee = async () => {
+    if (!postMigrationFee) {
+      setAdminMessage("Please enter fee percent")
       return
     }
     setIsLoading(true)
     try {
-      await recoverSellSpreadLiquidity(recoverSpreadToken)
-      setAdminMessage("Sell spread liquidity recovered successfully!")
-      setRecoverSpreadToken("")
-    } catch (error) {
-      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleTransferOwnership = async () => {
-    if (!newOwnerAddress) {
-      setAdminMessage("Please enter new owner address")
-      return
-    }
-    if (!confirm("WARNING: This will transfer contract ownership to a new address. Are you absolutely sure?")) {
-      return
-    }
-    const confirmation = prompt("Type TRANSFER to confirm ownership transfer:")
-    if (confirmation !== "TRANSFER") {
-      setAdminMessage("Ownership transfer cancelled")
-      return
-    }
-    setIsLoading(true)
-    try {
-      await transferOwnership(newOwnerAddress)
-      setAdminMessage("Ownership transferred successfully!")
-      setNewOwnerAddress("")
+      await setDefaultPostMigrationTransferFeePercent(Number.parseInt(postMigrationFee))
+      setAdminMessage("Default post-migration transfer fee set successfully!")
+      setPostMigrationFee("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -302,6 +190,63 @@ export default function AdminPage() {
       setAdminMessage("Token sell spread set successfully!")
       setTokenSpreadAddress("")
       setTokenSpreadPercent("")
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleEmergencyWithdraw = async () => {
+    if (!emergencyToken) {
+      setAdminMessage("Please enter token address")
+      return
+    }
+    if (!confirm("WARNING: This will refund all users' native contributions for this token. Holders keep their tokens but cannot redeem again. Continue?")) {
+      return
+    }
+    setIsLoading(true)
+    try {
+      await emergencyWithdrawTokens(emergencyToken)
+      setAdminMessage("Emergency withdrawal successful!")
+      setEmergencyToken("")
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRecoverSellSpreadLiquidity = async () => {
+    if (!recoverSpreadToken) {
+      setAdminMessage("Please enter token address")
+      return
+    }
+    setIsLoading(true)
+    try {
+      await recoverSellSpreadLiquidity(recoverSpreadToken)
+      setAdminMessage("Sell spread liquidity recovered successfully!")
+      setRecoverSpreadToken("")
+    } catch (error) {
+      setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCompleteTokenLaunch = async () => {
+    if (!completeLaunchToken) {
+      setAdminMessage("Please enter token address")
+      return
+    }
+    if (!confirm("Are you sure you want to complete this token launch? This will mark the token as completed and run DEX migration (wrap, add liquidity, enable transfer fee). This action cannot be undone.")) {
+      return
+    }
+    setIsLoading(true)
+    try {
+      await completeTokenLaunch(completeLaunchToken)
+      setAdminMessage("Token launch completed successfully!")
+      setCompleteLaunchToken("")
     } catch (error) {
       setAdminMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
@@ -438,8 +383,7 @@ export default function AdminPage() {
             <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
               <h3 className="font-semibold mb-2 text-blue-300">Import from Contract</h3>
               <p className="text-sm text-gray-400 mb-4">
-                This will fetch all tokens from the contract at 0xD9E849B6d44946B0D0FAEafe34b92C79c68cCbeF and add them
-                to the database. Existing tokens will be skipped.
+                Fetch all tokens from the contract and add them to the database. Existing tokens will be skipped.
               </p>
               <Button onClick={handleImportTokens} disabled={isImporting} className="bg-blue-600 hover:bg-blue-700 text-white">
                 {isImporting ? (
@@ -468,33 +412,72 @@ export default function AdminPage() {
           <CardHeader>
             <CardTitle className="text-purple-400 flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              Admin Settings
+              Contract Management
             </CardTitle>
-            <CardDescription className="text-gray-400">Configure contract parameters</CardDescription>
+            <CardDescription className="text-gray-400">Configure contract parameters and manage tokens</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-purple-300">Set Creator Transfer Fee</h3>
+              <h3 className="font-semibold mb-2 text-purple-300">Set Fee Percent</h3>
               <p className="text-sm text-gray-400 mb-3">
-                Set the transfer fee percentage for a specific token&apos;s creator.
+                Sets the global buy/sell fee percent (capped by MAX_FEE_PERCENT).
               </p>
-              <div className="flex gap-2 mb-3">
-                <Input
-                  type="text"
-                  placeholder="Token address"
-                  value={creatorFeeToken}
-                  onChange={(e) => setCreatorFeeToken(e.target.value)}
-                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
-                />
+              <div className="flex gap-2">
                 <Input
                   type="number"
-                  placeholder="Fee %"
-                  value={creatorFeePercent}
-                  onChange={(e) => setCreatorFeePercent(e.target.value)}
-                  className="w-24 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                  placeholder="Fee percent"
+                  value={globalFeePercent}
+                  onChange={(e) => setGlobalFeePercent(e.target.value)}
+                  className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
-                  onClick={handleSetCreatorTransferFee}
+                  onClick={handleSetFeePercent}
+                  disabled={isLoading}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  Set Fee
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-purple-300">Set Default Post-Migration Transfer Fee</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Sets the default transfer fee % after DEX migration (capped).
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Fee percent"
+                  value={postMigrationFee}
+                  onChange={(e) => setPostMigrationFee(e.target.value)}
+                  className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Button
+                  onClick={handleSetTransferFee}
+                  disabled={isLoading}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  Set Fee
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-purple-300">Set Default Sell Spread Percent</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Sets the default sell spread % (capped by MAX_SELL_SPREAD_PERCENT).
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Spread percent"
+                  value={defaultSpreadPercent}
+                  onChange={(e) => setDefaultSpreadPercent(e.target.value)}
+                  className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
+                <Button
+                  onClick={handleSetSellSpreadPercent}
                   disabled={isLoading}
                   className="bg-purple-600 hover:bg-purple-700 text-white"
                 >
@@ -503,29 +486,42 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-red-300">Emergency Withdrawal</h3>
-              <div className="flex gap-2 mb-3">
+            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-purple-300">Set Token Sell Spread</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Sets per-token sell spread % for a specific token.
+              </p>
+              <div className="flex gap-2">
                 <Input
                   type="text"
                   placeholder="Token address"
-                  value={emergencyToken}
-                  onChange={(e) => setEmergencyToken(e.target.value)}
+                  value={tokenSpreadAddress}
+                  onChange={(e) => setTokenSpreadAddress(e.target.value)}
                   className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
+                <Input
+                  type="number"
+                  placeholder="Spread %"
+                  value={tokenSpreadPercent}
+                  onChange={(e) => setTokenSpreadPercent(e.target.value)}
+                  className="w-24 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                />
                 <Button
-                  onClick={handleEmergencyWithdraw}
+                  onClick={handleSetTokenSellSpread}
                   disabled={isLoading}
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
                 >
-                  Withdraw
+                  Set
                 </Button>
               </div>
             </div>
 
             <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
               <h3 className="font-semibold mb-2 text-purple-300">Set DEX Router</h3>
-              <div className="flex gap-2 mb-3">
+              <p className="text-sm text-gray-400 mb-3">
+                Sets the DEX router used for migration.
+              </p>
+              <div className="flex gap-2">
                 <Input
                   type="text"
                   placeholder="Router address"
@@ -543,139 +539,10 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-purple-300">Get Token Info</h3>
-              <div className="flex gap-2 mb-3">
-                <Input
-                  type="text"
-                  placeholder="Token address"
-                  value={infoToken}
-                  onChange={(e) => setInfoToken(e.target.value)}
-                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
-                />
-                <Button
-                  onClick={handleGetTokenInfo}
-                  disabled={isLoading}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  Info
-                </Button>
-              </div>
-            </div>
-
-            {adminMessage && (
-              <div className="p-4 rounded-lg bg-gray-800 border border-gray-600 text-gray-200">
-                {adminMessage}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="mb-6 border-green-500/50 bg-card">
-          <CardHeader>
-            <CardTitle className="text-green-400 flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Contract Management
-            </CardTitle>
-            <CardDescription className="text-gray-400">Token launch, fees, and ownership functions</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-green-300">Collect & Split Transfer Fees</h3>
-              <p className="text-sm text-gray-400 mb-3">
-                Collect accumulated transfer fees for a token and split them according to the contract rules.
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Token address"
-                  value={collectFeesToken}
-                  onChange={(e) => setCollectFeesToken(e.target.value)}
-                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
-                />
-                <Button
-                  onClick={handleCollectFees}
-                  disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Collect
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-green-300">Complete Token Launch</h3>
-              <p className="text-sm text-gray-400 mb-3">
-                Manually complete a token launch. This will finalize the bonding curve and migrate liquidity.
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Token address"
-                  value={completeLaunchToken}
-                  onChange={(e) => setCompleteLaunchToken(e.target.value)}
-                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
-                />
-                <Button
-                  onClick={handleCompleteTokenLaunch}
-                  disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Complete
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-green-300">Set Default Post-Migration Transfer Fee</h3>
-              <p className="text-sm text-gray-400 mb-3">
-                Set the default transfer fee percentage applied to tokens after they migrate from the bonding curve.
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  placeholder="Fee percent"
-                  value={postMigrationFee}
-                  onChange={(e) => setPostMigrationFee(e.target.value)}
-                  className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
-                />
-                <Button
-                  onClick={handleSetTransferFee}
-                  disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Set Fee
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-green-300">Set Fee Percent</h3>
-              <p className="text-sm text-gray-400 mb-3">
-                Set the global fee percentage for the contract.
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  placeholder="Fee percent"
-                  value={globalFeePercent}
-                  onChange={(e) => setGlobalFeePercent(e.target.value)}
-                  className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
-                />
-                <Button
-                  onClick={handleSetFeePercent}
-                  disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Set Fee
-                </Button>
-              </div>
-            </div>
-
             <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
               <h3 className="font-semibold mb-2 text-blue-300">Recover Sell Spread Liquidity</h3>
               <p className="text-sm text-gray-400 mb-3">
-                Recover excess liquidity from a token&apos;s sell spread back to the treasury.
+                Pulls excess (sell-spread) native from token contract to treasury.
               </p>
               <div className="flex gap-2">
                 <Input
@@ -696,54 +563,47 @@ export default function AdminPage() {
             </div>
 
             <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-green-300">Set Default Sell Spread Percent</h3>
+              <h3 className="font-semibold mb-2 text-green-300">Complete Token Launch</h3>
               <p className="text-sm text-gray-400 mb-3">
-                Set the default sell spread percentage applied to all new tokens.
+                Marks token as completed and runs DEX migration (wrap, add liquidity, enable transfer fee).
               </p>
               <div className="flex gap-2">
                 <Input
-                  type="number"
-                  placeholder="Spread percent"
-                  value={defaultSpreadPercent}
-                  onChange={(e) => setDefaultSpreadPercent(e.target.value)}
-                  className="w-32 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                  type="text"
+                  placeholder="Token address"
+                  value={completeLaunchToken}
+                  onChange={(e) => setCompleteLaunchToken(e.target.value)}
+                  className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
                 <Button
-                  onClick={handleSetSellSpreadPercent}
+                  onClick={handleCompleteTokenLaunch}
                   disabled={isLoading}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
-                  Set
+                  Complete
                 </Button>
               </div>
             </div>
 
-            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-green-300">Set Token Sell Spread</h3>
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <h3 className="font-semibold mb-2 text-red-300">Emergency Withdraw Tokens</h3>
               <p className="text-sm text-gray-400 mb-3">
-                Set the sell spread percentage for a specific token.
+                Refunds all users&apos; native contributions for a token. Holders keep tokens but can&apos;t redeem again.
               </p>
-              <div className="flex gap-2 mb-3">
+              <div className="flex gap-2">
                 <Input
                   type="text"
                   placeholder="Token address"
-                  value={tokenSpreadAddress}
-                  onChange={(e) => setTokenSpreadAddress(e.target.value)}
+                  value={emergencyToken}
+                  onChange={(e) => setEmergencyToken(e.target.value)}
                   className="flex-1 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
                 />
-                <Input
-                  type="number"
-                  placeholder="Spread %"
-                  value={tokenSpreadPercent}
-                  onChange={(e) => setTokenSpreadPercent(e.target.value)}
-                  className="w-24 text-sm bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
-                />
                 <Button
-                  onClick={handleSetTokenSellSpread}
+                  onClick={handleEmergencyWithdraw}
                   disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-red-600 hover:bg-red-700 text-white"
                 >
-                  Set
+                  Withdraw
                 </Button>
               </div>
             </div>
@@ -751,7 +611,7 @@ export default function AdminPage() {
             <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
               <h3 className="font-semibold mb-2 text-orange-300">Transfer Ownership</h3>
               <p className="text-sm text-gray-400 mb-3">
-                Transfer contract ownership to a new address. This is irreversible - double check the address.
+                Sets a new owner (must be non-zero). This is irreversible - double check the address.
               </p>
               <div className="flex gap-2">
                 <Input
@@ -770,6 +630,12 @@ export default function AdminPage() {
                 </Button>
               </div>
             </div>
+
+            {adminMessage && (
+              <div className="p-4 rounded-lg bg-gray-800 border border-gray-600 text-gray-200">
+                {adminMessage}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -795,8 +661,7 @@ export default function AdminPage() {
             <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
               <h3 className="font-semibold mb-2 text-red-300">Delete All Tokens</h3>
               <p className="text-sm text-gray-400 mb-4">
-                This will permanently delete all meme tokens from the database. This action cannot be undone. Use this
-                before deploying a new contract.
+                This will permanently delete all meme tokens from the database. This action cannot be undone.
               </p>
               <Button variant="destructive" onClick={handleDeleteAllTokens} disabled={isDeleting} className="bg-red-600 hover:bg-red-700 text-white">
                 {isDeleting ? "Deleting..." : "Delete All Tokens"}
@@ -808,16 +673,6 @@ export default function AdminPage() {
                 {message}
               </div>
             )}
-
-            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-              <h3 className="font-semibold mb-2 text-blue-300">Next Steps After Deletion</h3>
-              <ol className="text-sm text-gray-400 space-y-1 list-decimal list-inside">
-                <li>Update the contract address in lib/contract-config.ts</li>
-                <li>Replace the ABI in lib/contract-abi.json with your new contract's ABI</li>
-                <li>Test token creation with the new contract</li>
-                <li>Verify all trading functions work correctly</li>
-              </ol>
-            </div>
           </CardContent>
         </Card>
       </div>
