@@ -109,21 +109,39 @@ function buildCandles(trades: TradeEvent[], currentPrice: number, timeframe: Tim
 
 function formatPriceAxis(price: number): string {
   if (price === 0) return "0"
-  if (price >= 1) return price.toFixed(2)
-  if (price >= 0.01) return price.toFixed(4)
-  if (price >= 0.0001) return price.toFixed(6)
-  if (price >= 0.000001) return price.toFixed(8)
-  if (price >= 0.00000001) return price.toFixed(10)
-  return price.toExponential(3)
+  const abs = Math.abs(price)
+  if (abs >= 1000) return price.toFixed(2)
+  if (abs >= 1) return price.toFixed(4)
+  if (abs >= 0.01) return price.toFixed(6)
+  if (abs >= 0.0001) return price.toFixed(8)
+  if (abs >= 0.000001) return price.toFixed(10)
+  if (abs >= 0.00000001) return price.toFixed(12)
+  return price.toExponential(4)
 }
 
 function formatPriceDisplay(price: number): string {
   if (price === 0) return "$0.00"
+  if (price >= 1000) return `$${price.toFixed(2)}`
   if (price >= 1) return `$${price.toFixed(4)}`
   if (price >= 0.01) return `$${price.toFixed(6)}`
   if (price >= 0.0001) return `$${price.toFixed(8)}`
   if (price < 0.0001) return `$${price.toExponential(4)}`
   return `$${price.toFixed(8)}`
+}
+
+function computePriceLines(candles: Candle[]): { high: number; low: number; mid: number; q1: number; q3: number } | null {
+  if (candles.length === 0) return null
+  let high = -Infinity
+  let low = Infinity
+  for (const c of candles) {
+    if (c.high > high) high = c.high
+    if (c.low < low) low = c.low
+  }
+  if (high === low) return null
+  const mid = (high + low) / 2
+  const q1 = (low + mid) / 2
+  const q3 = (mid + high) / 2
+  return { high, low, mid, q1, q3 }
 }
 
 export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LivePriceChartProps) {
@@ -138,6 +156,7 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
   const [hoveredCandle, setHoveredCandle] = useState<Candle | null>(null)
   const tradesRef = useRef<TradeEvent[]>([])
   const currentPriceRef = useRef(initialPrice)
+  const priceLinesRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([])
 
   useEffect(() => {
     if (!chartContainerRef.current) return
@@ -145,13 +164,13 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "rgba(255, 255, 255, 0.6)",
+        textColor: "rgba(255, 255, 255, 0.7)",
         fontSize: 11,
         fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
       },
       grid: {
         vertLines: { color: "rgba(255, 255, 255, 0.03)" },
-        horzLines: { color: "rgba(255, 255, 255, 0.05)" },
+        horzLines: { color: "rgba(255, 255, 255, 0.08)" },
       },
       crosshair: {
         mode: 0,
@@ -169,25 +188,37 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
         },
       },
       rightPriceScale: {
-        borderColor: "rgba(255, 255, 255, 0.08)",
-        scaleMargins: { top: 0.1, bottom: 0.1 },
+        borderColor: "rgba(255, 255, 255, 0.1)",
+        scaleMargins: { top: 0.08, bottom: 0.08 },
         autoScale: true,
         borderVisible: true,
         ticksVisible: true,
         entireTextOnly: false,
-        minimumWidth: 80,
+        minimumWidth: 100,
       },
       timeScale: {
-        borderColor: "rgba(255, 255, 255, 0.08)",
+        borderColor: "rgba(255, 255, 255, 0.1)",
         timeVisible: true,
         secondsVisible: false,
         barSpacing: 8,
-        minBarSpacing: 4,
+        minBarSpacing: 3,
         rightOffset: 5,
         fixLeftEdge: false,
         fixRightEdge: false,
       },
-      handleScroll: { vertTouchDrag: false },
+      handleScroll: {
+        vertTouchDrag: true,
+        mouseWheel: true,
+        pressedMouseMove: true,
+      },
+      handleScale: {
+        axisPressedMouseMove: {
+          time: true,
+          price: true,
+        },
+        mouseWheel: true,
+        pinch: true,
+      },
       width: chartContainerRef.current.clientWidth,
       height: 420,
     })
@@ -199,6 +230,11 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
       borderUpColor: "#26a69a",
       wickDownColor: "#ef5350",
       wickUpColor: "#26a69a",
+      lastValueVisible: true,
+      priceLineVisible: true,
+      priceLineColor: "#2962FF",
+      priceLineWidth: 1,
+      priceLineStyle: 2,
       priceFormat: {
         type: "custom",
         formatter: (price: number) => formatPriceAxis(price),
@@ -242,6 +278,7 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
       chart.remove()
       chartRef.current = null
       candlestickSeriesRef.current = null
+      priceLinesRef.current = []
     }
   }, [])
 
@@ -310,6 +347,72 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
     }))
 
     candlestickSeriesRef.current.setData(chartData)
+
+    for (const pl of priceLinesRef.current) {
+      try { candlestickSeriesRef.current.removePriceLine(pl) } catch {}
+    }
+    priceLinesRef.current = []
+
+    const levels = computePriceLines(candles)
+    if (levels) {
+      const highLine = candlestickSeriesRef.current.createPriceLine({
+        price: levels.high,
+        color: "rgba(38, 166, 154, 0.5)",
+        lineWidth: 1,
+        lineStyle: 1,
+        axisLabelVisible: true,
+        title: "High",
+        lineVisible: true,
+        axisLabelColor: "#26a69a",
+        axisLabelTextColor: "#ffffff",
+      })
+      const lowLine = candlestickSeriesRef.current.createPriceLine({
+        price: levels.low,
+        color: "rgba(239, 83, 80, 0.5)",
+        lineWidth: 1,
+        lineStyle: 1,
+        axisLabelVisible: true,
+        title: "Low",
+        lineVisible: true,
+        axisLabelColor: "#ef5350",
+        axisLabelTextColor: "#ffffff",
+      })
+      const midLine = candlestickSeriesRef.current.createPriceLine({
+        price: levels.mid,
+        color: "rgba(255, 255, 255, 0.2)",
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: "",
+        lineVisible: true,
+        axisLabelColor: "rgba(255,255,255,0.15)",
+        axisLabelTextColor: "rgba(255,255,255,0.7)",
+      })
+      const q1Line = candlestickSeriesRef.current.createPriceLine({
+        price: levels.q1,
+        color: "rgba(255, 255, 255, 0.1)",
+        lineWidth: 1,
+        lineStyle: 3,
+        axisLabelVisible: true,
+        title: "",
+        lineVisible: true,
+        axisLabelColor: "rgba(255,255,255,0.08)",
+        axisLabelTextColor: "rgba(255,255,255,0.5)",
+      })
+      const q3Line = candlestickSeriesRef.current.createPriceLine({
+        price: levels.q3,
+        color: "rgba(255, 255, 255, 0.1)",
+        lineWidth: 1,
+        lineStyle: 3,
+        axisLabelVisible: true,
+        title: "",
+        lineVisible: true,
+        axisLabelColor: "rgba(255,255,255,0.08)",
+        axisLabelTextColor: "rgba(255,255,255,0.5)",
+      })
+      priceLinesRef.current = [highLine, lowLine, midLine, q1Line, q3Line]
+    }
+
     chartRef.current?.timeScale().fitContent()
   }, [trades, currentPrice, timeFrame])
 
@@ -317,7 +420,7 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <span className="text-xl font-bold text-foreground font-mono tracking-tight">{formatPriceDisplay(displayPrice)}</span>
           {!hoveredCandle && trades.length >= 2 && (
@@ -378,10 +481,13 @@ export default function LivePriceChart({ tokenAddress, initialPrice = 0 }: LiveP
 
       <div className="flex items-center justify-between mt-2 px-1 text-xs text-muted-foreground">
         <span>{trades.length} trade{trades.length !== 1 ? "s" : ""}</span>
-        <span className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-          Live
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="opacity-60">Scroll to zoom | Drag axis to scale</span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            Live
+          </span>
+        </div>
       </div>
     </div>
   )
