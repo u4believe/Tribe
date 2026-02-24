@@ -154,6 +154,8 @@ export async function fetchAllTokens(): Promise<MemeToken[]> {
       "efc07805-5d6a-4705-a3e6-c038132e8c9b",
       "7fdc6bfb-b826-4920-ad29-06ba457e30e6",
       "00a88f19-d116-4270-8be5-f8fa234a1995",
+      "b1bb49f5-570a-4e6e-942f-ad85a6533bfb",
+      "2c7b93e5-4808-4a39-890e-d407c7555268",
     ])
 
     const validTokens = tokens.filter(
