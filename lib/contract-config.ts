@@ -1,5 +1,5 @@
 export const CONTRACT_CONFIG = {
-  address: "0xcDa22FcC22be684712CFBBcaFf365dBDF2FDD080",
+  address: "0x8807125cf15079fc7649b3f5589a1c102e58110f",
   chainId: 1155,
   rpcUrl: "https://intuition.calderachain.xyz/http",
   network: {

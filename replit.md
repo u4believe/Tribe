@@ -29,9 +29,9 @@ A Next.js 15 web application for launching and trading meme tokens on a bonding 
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 
 ## Key Configuration
-- **Contract Address**: `0xcDa22FcC22be684712CFBBcaFf365dBDF2FDD080` (Intuition Mainnet)
+- **Contract Address**: `0x8807125cf15079fc7649b3f5589a1c102e58110f` (Intuition Mainnet)
 - **Admin Wallet**: `0xD4F79436a2a69C70127570749dc39Ae5D5C0c646`
-- **Contract ABI**: `lib/contract-abi.json` (updated 2026-02-16 with sell spread and recovery functions)
+- **Contract ABI**: `lib/contract-abi.json` (updated 2026-02-24 with comments, user volumes, audit functions)
 
 ## Recent Changes
 - 2026-02-17: Mobile responsiveness overhaul - added bottom navigation bar for mobile (Home, DEX, Vote, Leaderboard, Docs), hidden desktop sidebar/footer on mobile, bottom-sheet trade modals, responsive token cards/filters/search, mobile-optimized bonding curve detail view with stacked layout
